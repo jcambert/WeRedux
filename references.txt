@@ -1,0 +1,4 @@
+https://github.com/torhovland/blazor-redux/
+https://github.com/mrpmorris/blazor-fluxor
+https://www.dotnetcurry.com/reactjs/1356/redux-pattern-tutorial
+https://github.com/zalmoxisus/redux-devtools-extension
