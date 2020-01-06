@@ -25,5 +25,9 @@ namespace WeRedux
                 select new ReducerTypes { Type = t, Attribute = attributes.First() as ReducerAttribute};
             return typesWithMyAttribute.ToList();
         }
+
+        internal static string GetName<TAction>(this TAction action)
+            where TAction:IAction
+            => action.GetType().Name.ToUpperInvariant();
     }
 }

@@ -4,10 +4,10 @@ using System.Text;
 
 namespace WeRedux
 {
-    [AttributeUsage(AttributeTargets.Class,AllowMultiple =true,Inherited =true)]
+    [AttributeUsage(AttributeTargets.Class,AllowMultiple =true,Inherited =false)]
     public class ReducerAttribute : Attribute
     {
-        public ReducerAttribute(Type t)
+        public ReducerAttribute()
         {
 
         }

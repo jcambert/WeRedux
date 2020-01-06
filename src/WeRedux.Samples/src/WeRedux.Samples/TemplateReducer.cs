@@ -4,10 +4,10 @@ using System.Text;
 
 namespace WeRedux.Samples
 {
-    [Reducer(typeof(CounterState))]
+   // [Reducer()]
     public class TemplateReducer : Reducer<CounterState, IAction>
     {
-        string[] words = new[]{"lorem", "ipsum", "dolor", "sit", "amet", "consectetuer",
+        readonly string[] words = new[]{"lorem", "ipsum", "dolor", "sit", "amet", "consectetuer",
         "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod",
         "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat"};
         public TemplateReducer()

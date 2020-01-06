@@ -5,5 +5,7 @@
         void Dispatch(TAction action) ;
 
         void Dispatch<T>() where T:TAction,new();
+
+        void Dispatch(string action);
     }
 }
