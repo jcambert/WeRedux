@@ -33,6 +33,12 @@ namespace WeReduxBlazor
             Store.Dispatch<T>();
         }
 
+        [JSInvokable("Reset")]
+        public void Reset()
+        {
+            Store.Reset();
+        }
+
         [JSInvokable("Dispatch")]
         public void Dispatch(string action)
         {

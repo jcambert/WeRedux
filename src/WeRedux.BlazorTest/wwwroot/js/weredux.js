@@ -36,22 +36,28 @@
         },
         dispatch: function (action) {
             if (!this.dotnetref) return;
-            this.dotnetref.invokeMethodAsync('Dispatch', action);
+            if (action === "@@INIT") {
+                this.dotnetref.invokeMethodAsync('Reset');
+            }
+                
+            else
+                this.dotnetref.invokeMethodAsync('Dispatch', action);
         },
-        travelTo: function (message) {
-            this.dotnetref.invokeMethodAsync('TravelTo', message.payload.actionId);
+        travelTo: function (index) {
+            this.dotnetref.invokeMethodAsync('TravelTo', index);
         },
+
         onMutation: function (mutation) {
             this.mutation = mutation;
         },
         onChanged: function (state) {
             console.log('State changed to:', state);
 
-            window.devTools.send(this.mutation,state);
+            window.devTools.send(this.mutation, state);
         }
     }
     window.setComponent = function (dotnetref) {
-        window.weredux.dotnetref=dotnetref;
+        window.weredux.dotnetref = dotnetref;
 
     }
     window.weredux = weredux;
@@ -64,7 +70,18 @@
 
         } else if (message.type === 'DISPATCH' && message.state) {
             // Time-traveling
-            window.weredux.travelTo(message);
+            window.weredux.travelTo(message.payload.actionId);
+        } else if (message.type === 'DISPATCH' && message.payload) {
+            var payload = message.payload;
+            if (payload.type === 'IMPORT_STATE') {
+                Object.keys(payload.nextLiftedState.actionsById).forEach(function (key) {
+                    var action = payload.nextLiftedState.actionsById[key];
+                    if (action.type === "PERFORM_ACTION") {
+                        window.weredux.dispatch(action.action.type);
+                    }
+                });
+                window.weredux.travelTo(payload.nextLiftedState.currentStateIndex);
+            }
         }
 
     });

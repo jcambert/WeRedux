@@ -1,5 +1,6 @@
 ﻿using AutoMapper;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Reactive.Subjects;
 using System.Reflection;
@@ -11,15 +12,16 @@ namespace WeRedux
         where TAction : IAction
     {
         #region private variables
+        private TState _initialState;
         private TState _state;
         private readonly object _syncRoot = new object();
-        private readonly TState _initialState;
         private readonly Subject<TState> _onInitialStateChanged = new Subject<TState>();
         private readonly Subject<TState> _onReduced = new Subject<TState>();
         private readonly Subject<bool> _onTimeTravel = new Subject<bool>();
         private readonly Subject<TState> _onChanged = new Subject<TState>();
         private readonly Subject<IActionState<TState, TAction>> _onAdd = new Subject<IActionState<TState, TAction>>();
         private readonly Subject<string> _onMutation = new Subject<string>();
+
         private readonly IMapper _mapper;
         private readonly List<IReducer<TState, TAction>> reducers = new List<IReducer<TState, TAction>>();
         private readonly List<HistoricEntry<TState, TAction>> _history = new List<HistoricEntry<TState, TAction>>();
@@ -29,7 +31,7 @@ namespace WeRedux
         public Store()
         {
             Assembly[] _assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            this._initialState = this._state = new TState();
+            //this._initialState = this._state = new TState();
             MapperConfiguration cfg = new MapperConfiguration(c =>
             {
                 c.AddMaps(_assemblies);
@@ -41,30 +43,42 @@ namespace WeRedux
             }
 
             _mapper = cfg.CreateMapper();
-            _onInitialStateChanged.OnNext(_initialState);
+            //_onInitialStateChanged.OnNext(_initialState);
             Initialization();
         }
-        public Store(TState initialState, Profile profile)
+        public Store(Profile profile)
         {
-            this._initialState = this._state = initialState;
+            //this._initialState = this._state = new TState();
             MapperConfiguration cfg = new MapperConfiguration(c =>
             {
                 if (profile != null)
                     c.AddProfile(profile);
             });
             _mapper = cfg.CreateMapper();
-            _onInitialStateChanged.OnNext(_initialState);
+            //_onInitialStateChanged.OnNext(_initialState);
             Initialization();
         }
-
-        public Store(Profile profile) : this(new TState(), profile)
+        public Store(Action<IMapperConfigurationExpression> map)
         {
-
+            //this._initialState = this._state = new TState();
+            MapperConfiguration cfg = new MapperConfiguration(map);
+            _mapper = cfg.CreateMapper();
+            //_onInitialStateChanged.OnNext(_initialState);
+            Initialization();
         }
+        /*  public Store(Profile profile) : this(new TState(), profile)
+          {
+
+          }*/
 
         protected virtual void Initialization()
         {
-            History.Add(new HistoricEntry<TState, TAction>(new ActionState<TState, TAction> { NewState = _initialState, State = _initialState }));
+
+            OnInitialStateChanged.Subscribe(state =>
+            {
+                History.Clear();
+                History.Add(new HistoricEntry<TState, TAction>(new ActionState<TState, TAction> { NewState = state, State = state }));
+            });
             OnMutation.Subscribe(o =>
             {
                 CurrentMutation = o;
@@ -73,22 +87,41 @@ namespace WeRedux
             {
                 History.Add(new HistoricEntry<TState, TAction>(o));
             });
+            OnTimeTravel.Subscribe(travel => Travelling = travel);
+
+            this.InitialState = this._state = new TState();
         }
         #endregion
 
         #region Public Properties
         public String CurrentMutation { get; private set; }
+        public bool Travelling { get; private set; } = false;
         public TState State
         {
             get { return _state; }
             private set
             {
+                if (value == null)
+                    throw new ArgumentNullException("State cannot be null");
                 _state = value;
-                _onChanged.OnNext(_state);
+                if (!Travelling)
+                    _onChanged.OnNext(_state);
             }
         }
 
-        public TState Initial => _initialState;
+        public TState InitialState
+        {
+            get { return _initialState; }
+            set
+            {
+                if (value == null)
+                    throw new ArgumentNullException("Initial State cannot be null");
+            _initialState = value;
+                _onInitialStateChanged.OnNext(value);
+            }
+        }
+
+        public TState LastState => History.Last().ActionState.State;
         protected IMapper Mapper => _mapper;
 
         public IList<HistoricEntry<TState, TAction>> History => _history;
@@ -101,7 +134,6 @@ namespace WeRedux
         public IObservable<TState> OnReduced => _onReduced.AsObservable();
         public IObservable<bool> OnTimeTravel => _onTimeTravel.AsObservable();
         public IObservable<string> OnMutation => _onMutation.AsObservable();
-        //public void TimeTravel(TState state) => _onTimeTraveled.OnNext(state);
         #endregion
 
         #region Reducer
@@ -148,13 +180,13 @@ namespace WeRedux
             lock (_syncRoot)
             {
                 _onMutation.OnNext(action.GetType().Name.ToUpperInvariant());
-                TState newState = Mapper.Map<TState,TState>(State,o=> {  o.CreateInstance<TState>(); });
+                TState newState = Mapper.Map<TState, TState>(LastState, o => { o.CreateInstance<TState>(); });
 
                 foreach (var reducer in reducers)
                 {
                     reducer.Reduce(newState, State, action);
                 }
-                
+
                 if (ObservableReducer.ContainsKey(action.GetName()))
                     ObservableReducer[action.GetName()].OnNext(new ActionState<TState, TAction>() { NewState = newState, State = State, Action = action });
                 State = newState;
@@ -175,7 +207,6 @@ namespace WeRedux
             {
                 Dispatch((TAction)ActionByName[key].GetConstructor(new Type[] { }).Invoke(null));
             }
-            //throw new NotImplementedException();
         }
         #endregion
 
@@ -206,6 +237,16 @@ namespace WeRedux
             var hstate = History[index];
             State = hstate.ActionState.NewState;
             _onTimeTravel.OnNext(false);
+
+        }
+
+        #endregion
+
+        #region Resetting
+        public void Reset()
+        {
+
+            this.InitialState = this.State = new TState();
 
         }
         #endregion

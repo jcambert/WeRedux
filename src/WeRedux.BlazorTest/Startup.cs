@@ -28,7 +28,15 @@ namespace WeRedux.BlazorTest
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddSingleton<WeatherForecastService>();
-            services.AddScoped<IStore<CounterState, IAction>, Store<CounterState, IAction>>();
+            services.AddScoped<IStore<CounterState, IAction>, Store<CounterState, IAction>>(services=>
+            {
+                return new Store<CounterState, IAction>(
+                    cfg =>
+                    {
+                        cfg.CreateMap<CounterState, CounterState>();
+                    }
+                    );
+            });
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

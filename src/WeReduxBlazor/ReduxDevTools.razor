@@ -30,7 +30,14 @@
             {
                 await JSRuntime.InvokeVoidAsync("window.weredux.onChanged", this.ToString());
             });
-
+            Store.OnTimeTravel.Subscribe( (travel) => {
+                if (!travel)
+                    this.StateHasChanged();
+            });
+            Store.OnInitialStateChanged.Subscribe(async (State) =>
+            {
+                await JSRuntime.InvokeVoidAsync("window.weredux.init", this.ToString());
+            });
             await JSRuntime.InvokeVoidAsync("window.weredux.init", this.ToString());
         }
 
