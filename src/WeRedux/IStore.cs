@@ -2,16 +2,15 @@
 
 namespace WeRedux
 {
-    public interface IStore<TState, TAction> :IDispatcher<TAction>, IDisposable
+    public interface IStore<TState, TAction> :IStoreEvents<TState,TAction>, IDisposable
         where TState:new()
         where TAction :IAction
     {
         TState Initial { get; }
-        IObservable<TState> OnChanged { get; }
-        IObservable<TState> OnReduced { get; }
-        IObservable<TState> OnTimeTraveled { get; }
+        TState State { get; }
         void AddReducer<TReducer>(TReducer reducer) where TReducer : Reducer<TState, TAction>;
         void AddReducer<TReducer>() where TReducer : Reducer<TState, TAction>,new();
-       // IObservable<IActionState<TState,T>> On<T>() where T:TAction;
+        IObservable<IActionState<TState, TAction>> On<T>() where T : TAction;
+        void TravelTo(int index);
     }
 }

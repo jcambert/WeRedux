@@ -2,124 +2,47 @@
 
 @typeparam TState
 @typeparam TAction
-@inject IJSRuntime js
+
 
 
 <h3>ReduxDevTools - @Message </h3>
-@JS
+@ChildContent
+
+
 @code {
 
-    
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
 
-    protected override void OnAfterRender(bool firstRender)
+    public RenderFragment Script { get; set; }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        base.OnAfterRender(firstRender);
         if (firstRender)
         {
-            js.InvokeVoidAsync("window.setComponent", DotNetObjectReference.Create(this));
+            await JSRuntime.InvokeVoidAsync("window.setComponent", DotNetObjectReference.Create(this));
 
+            Store.OnMutation.Subscribe(async (mutation) =>
+            {
+                await JSRuntime.InvokeVoidAsync("window.weredux.onMutation", mutation);
+            });
+            Store.OnChanged.Subscribe(async(o) =>
+            {
+                await JSRuntime.InvokeVoidAsync("window.weredux.onChanged", this.ToString());
+            });
+
+            await JSRuntime.InvokeVoidAsync("window.weredux.init", this.ToString());
         }
-        Store.Dispatch("increment");
+
     }
-    public string Message { get; set; }
+
 
     private RenderFragment JS => builder =>
     {
 
         var seq = 0;
         builder.OpenElement(seq++, "script");
-        builder.AddContent(seq++, (MarkupString)
-@"
-(function () {;
-var extension = window.__REDUX_DEVTOOLS_EXTENSION__;
-if (!extension) {
-console.log('Redux DevTools not installed.');
-return;
-}else{
-console.log('You can play with Redux DevTools Extensions');
-}
-
-var config = { name: 'Blazor Redux' };
-
-function timeTravel(state) {
-const timeTravel = Blazor.platform.findMethod('BlazorRedux', 'BlazorRedux', 'DevToolsInterop', 'TimeTravelFromJs');
-Blazor.platform.callMethod(timeTravel, null, [ Blazor.platform.toDotNetString(state) ]);
-}
-
-if(!window.Blazor)return;
-window[""Blazor""].log = (action, state) => {
-var json = JSON.parse(state);
-if (action === 'initial')
-window.devTools.init(json);
-else
-window.devTools.send(action, json);
-return true;
-};
-console.dir(window[""Blazor""]);
-
-var devTools = extension.connect(config);
-if (!devTools) {
-console.log('Unable to connect to Redux DevTools.');
-return;
-}else{
-console.log('Your are connected to Redux DevTools');
-}
-devTools.subscribe((message) => {
-console.log(message);
-if (message.type === 'START') {
-console.log('Connected with Redux DevTools.');
-window.weredux.devToolsReady('Connected');
-
-}
-else if (message.type === 'DISPATCH' && message.state) {
-window.weredux.
-// Time-traveling
-//timeTravel(message.state);
-}/*
-else if (message.type === 'DISPATCH' && message.payload) {
-var payload = message.payload;
-if (payload.type === 'IMPORT_STATE') {
-// Hydration of state from a previous session
-var states = payload.nextLiftedState.computedStates;
-var index = payload.nextLiftedState.currentStateIndex;
-var state = states[index].state;
-timeTravel(JSON.stringify(state));
-}
-else if (payload.type === 'RESET') {
-// Reset state
-const devToolsReset = Blazor.platform.findMethod('BlazorRedux', 'BlazorRedux', 'DevToolsInterop', 'DevToolsReset');
-Blazor.platform.callMethod(devToolsReset, null, []);
-}
-else {
-console.log('Unhandled payload from Redux DevTools:');
-console.log(payload);
-}
-}*/
-else {
-console.log('Unhandled message from Redux DevTools:');
-console.log(message);
-}
-});
-window.devTools = devTools;
-
-
-
-
-var weredux={
-devToolsReady:function(message){
-    this.dotnetref.invokeMethodAsync('DevToolsReady','Connected');
-}
-}
-
-setComponent=function(dotnetref){
-weredux=Object.assign({dotnetref:dotnetref},weredux);
-window.weredux=weredux;
-}
-
-
-devTools.send('START');
-devTools.send('DISPATCH',{count:1});
-}());");
+        builder.AddContent(seq++, (MarkupString)@"");
         builder.CloseElement();
     };
 }

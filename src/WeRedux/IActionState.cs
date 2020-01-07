@@ -15,10 +15,11 @@ namespace WeRedux
 
     internal class ActionState<TState, TAction> : IActionState<TState, TAction>
     {
+        
         public TState NewState { get; set; }
 
         public TState State { get; set; }
 
-        public TAction Action { get; set; }
+        public TAction Action { get; set; } = default;
     }
 }

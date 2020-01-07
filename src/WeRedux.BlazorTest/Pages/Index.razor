@@ -1,6 +1,41 @@
 ﻿@page "/"
-
+@using WeReduxBlazor
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
-<WeReduxBlazor.ReduxDevTools TState="CounterState" TAction="IAction" ></WeReduxBlazor.ReduxDevTools>
+<ReduxDevTools TState="CounterState" TAction="IAction" @ref="reduxCounterState">
+    <button @onclick="increment">Increment</button><button @onclick="decrement">Decrement</button>
+    <h3>Counter: @reduxCounterState.State.Count</h3>
+</ReduxDevTools>
+
+@code{
+    public WeReduxBlazor.ReduxDevTools<CounterState, IAction> reduxCounterState { get; set; }
+
+    public void increment()
+    {
+        reduxCounterState.Store.Dispatch<IncrementCounter>();
+    }
+    public void decrement()
+    {
+        reduxCounterState.Store.Dispatch<DecrementCounter>();
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+        if (firstRender)
+        {
+            reduxCounterState.Store.On<IncrementCounter>().Subscribe(action =>
+            {
+                var a = action.Action as IncrementCounter;
+                action.NewState.Count += a.Step;
+            });
+            reduxCounterState.Store.On<DecrementCounter>().Subscribe(action =>
+            {
+                var a = action.Action as DecrementCounter;
+                action.NewState.Count -= a.Step;
+            });
+
+        }
+    }
+}

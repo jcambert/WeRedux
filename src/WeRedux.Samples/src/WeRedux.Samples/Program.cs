@@ -4,7 +4,7 @@ namespace WeRedux.Samples
 {
     class Program
     {
-        static void Main(string[] args)
+        static void Main()
         {
             
             var store = new Store<CounterState, IAction>();
@@ -35,6 +35,7 @@ namespace WeRedux.Samples
             }); 
             int max = new Random().Next(0,100);
             int j = 0;
+            store.Dispatch("templateaction");
             for (int i = 0; i < max; i++)
             {
                 store.Dispatch(actions[j++]);
