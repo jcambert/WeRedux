@@ -8,7 +8,8 @@ namespace WeRedux
     {
         IObservable<TState> OnInitialStateChanged { get; }
         IObservable<TState> OnChanged { get; }
-        IObservable<TState> OnReduced { get; }
+        IObservable<IActionState<TState, TAction>> OnAdd { get; }
+        IObservable <TState> OnReduced { get; }
         IObservable<bool> OnTimeTravel { get; }
 
         IObservable<string> OnMutation { get; }

@@ -17,7 +17,7 @@ namespace WeReduxBlazor
         public void DevToolsReady(string message)
         {
             this.Message = message;
-            this.StateHasChanged();
+           // this.StateHasChanged();
         }
 
         public string Message { get; set; }
@@ -69,6 +69,8 @@ namespace WeReduxBlazor
         public IObservable<TState> OnInitialStateChanged => Store.OnInitialStateChanged;
 
         public IObservable<string> OnMutation => Store.OnMutation;
+
+        public IObservable<IActionState<TState, TAction>> OnAdd => Store.OnAdd;
 
         public override string ToString()
         {

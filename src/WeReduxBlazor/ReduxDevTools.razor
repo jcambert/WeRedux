@@ -10,7 +10,11 @@
 
 
 @code {
+    [Parameter]
+    public string  Name { get; set; }
 
+    [Parameter]
+    public int HistorySize { get; set; } = -1;
     [Parameter]
     public RenderFragment ChildContent { get; set; }
 
@@ -20,15 +24,15 @@
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("window.setComponent", DotNetObjectReference.Create(this));
+            await JSRuntime.InvokeVoidAsync("window.addStore", DotNetObjectReference.Create(this),this.Name,this.ToString());
 
             Store.OnMutation.Subscribe(async (mutation) =>
             {
-                await JSRuntime.InvokeVoidAsync("window.weredux.onMutation", mutation);
+                await JSRuntime.InvokeVoidAsync($"window.weredux.{this.Name.ToLowerInvariant()}.onMutation", mutation);
             });
             Store.OnChanged.Subscribe(async(o) =>
             {
-                await JSRuntime.InvokeVoidAsync("window.weredux.onChanged", this.ToString());
+                await JSRuntime.InvokeVoidAsync($"window.weredux.{this.Name.ToLowerInvariant()}.onChanged", this.ToString());
             });
             Store.OnTimeTravel.Subscribe( (travel) => {
                 if (!travel)
@@ -36,20 +40,13 @@
             });
             Store.OnInitialStateChanged.Subscribe(async (State) =>
             {
-                await JSRuntime.InvokeVoidAsync("window.weredux.init", this.ToString());
+                await JSRuntime.InvokeVoidAsync($"window.weredux.{this.Name.ToLowerInvariant()}.init", this.ToString());
             });
-            await JSRuntime.InvokeVoidAsync("window.weredux.init", this.ToString());
+           // await JSRuntime.InvokeVoidAsync($"window.weredux[{this.Name}].init", this.ToString());
         }
 
     }
 
 
-    private RenderFragment JS => builder =>
-    {
 
-        var seq = 0;
-        builder.OpenElement(seq++, "script");
-        builder.AddContent(seq++, (MarkupString)@"");
-        builder.CloseElement();
-    };
 }

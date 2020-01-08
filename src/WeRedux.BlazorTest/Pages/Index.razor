@@ -1,15 +1,20 @@
 ﻿@page "/"
-@using WeReduxBlazor
+
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
-<ReduxDevTools TState="CounterState" TAction="IAction" @ref="reduxCounterState">
-    <button @onclick="increment">Increment</button><button @onclick="decrement">Decrement</button>
+<ReduxDevTools TState="CounterState" TAction="IAction" @ref="reduxCounterState" HistorySize="10" Name="Counter">
+    <button @onclick="increment">Increment</button><button @onclick="decrement" >Decrement</button>
     <h3>Counter: @reduxCounterState.State.Count</h3>
+</ReduxDevTools>
+<ReduxDevTools TState="CounterState" TAction="IAction" @ref="reduxCounterState2" HistorySize="10" Name="Counter2" >
+    <button @onclick="()=>reduxCounterState2.Store.Dispatch<DecrementCounter>()">Decrement</button><button @onclick="()=>reduxCounterState2.Store.Dispatch<IncrementCounter>()">Increment</button>
+    <h3>Counter: @reduxCounterState2.State.Count</h3>
 </ReduxDevTools>
 
 @code{
     public WeReduxBlazor.ReduxDevTools<CounterState, IAction> reduxCounterState { get; set; }
+    public WeReduxBlazor.ReduxDevTools<CounterState, IAction> reduxCounterState2 { get; set; }
 
     public void increment()
     {
