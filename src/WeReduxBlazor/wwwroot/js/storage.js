@@ -1,7 +1,8 @@
 ﻿
-
-var storageAssembly = 'WePing';
-var storageNamespace = storageAssembly + "_Services";
+//@see https://github.com/cloudcrate/BlazorStorage
+var storageAssembly = 'WeReduxBlazor';
+//var storageNamespace = storageAssembly + "_Services";
+var storageNamespace = storageAssembly;
 var storages = {
     LocalStorage: localStorage,
     SessionStorage: sessionStorage
@@ -50,6 +51,7 @@ var _loop_1 = function () {
             AddEventListener: function (instance) {
                 window.removeEventListener('storage', store_1.OnStorageChanged, false);
                 store_1.instance = instance;
+                console.log("Storage Add event Listener")
                 window.addEventListener('storage', store_1.OnStorageChanged, false);
             },
             /**
@@ -64,7 +66,7 @@ var _loop_1 = function () {
              */
             OnStorageChanged: function (event) {
                 if (store_1.instance) {
-                    store_1.instance.invokeMethodAsync("OnStorageChanged", event.key, event.newValue, event.oldValue);
+                    store_1.instance.invokeMethodAsync("StorageChangedTo", event.key, event.newValue, event.OldValue);
                 }
             },
         };
@@ -90,6 +92,8 @@ function removeItem(storage, key) {
 }
 function setItem(storage, key, data) {
     storage.setItem(key, data);
+    //console.log('setItem', key, data);
+    //window.dispatchEvent(new Event('storage', { key: key, newValue: data }));
 }
 function getItemString(storage, key) {
     return storage[key];

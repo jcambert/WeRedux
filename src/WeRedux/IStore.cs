@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace WeRedux
 {
@@ -12,7 +13,8 @@ namespace WeRedux
         void AddReducer<TReducer>() where TReducer : Reducer<TState, TAction>,new();
         IObservable<IActionState<TState, TAction>> On<T>() where T : TAction;
         void TravelTo(int index);
-
+        List<HistoricEntry<TState, TAction>> History { get; }
+        string Name { get; }
         void Reset();
     }
 }

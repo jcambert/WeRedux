@@ -1,0 +1,40 @@
+﻿
+
+<div class="bootstrap-switch-inverse bootstrap-switch bootstrap-switch-wrapper bootstrap-switch-animate @ToggleClass" style="width:@($"{Width.ToString()}px;") " @onclick="Toggle">
+    <div class="bootstrap-switch-container" style="width: @($" {(Width*1.5).ToString()}px;") margin-left: @ToggleMarginLeft;">
+        <span class="bootstrap-switch-handle-off bootstrap-switch-@ColorOn" style="width:@($" {(Width/2).ToString()}px;")">@LabelOff</span>
+        <span class="bootstrap-switch-label" style="width: @($" {(Width/2).ToString()}px;")">&nbsp;</span>
+        <span class="bootstrap-switch-handle-on bootstrap-switch-@ColorOff" style="width: @($" {(Width/2).ToString()}px;")">@LabelOn</span>
+        <input type="checkbox" data-toggle="switch" checked="" data-inverse="true" data-on-color="secondary" data-off-color="default">
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public int Width { get; set; } = 120;
+    [Parameter]
+    public string LabelOn { get; set; } = "ON";
+    [Parameter]
+    public string LabelOff { get; set; } = "OFF";
+    [Parameter]
+    public string ColorOn { get; set; } = "default";
+    [Parameter]
+    public string ColorOff { get; set; } = "secondary";
+    [Parameter]
+    public EventCallback OnOnClick { get; set; }
+    [Parameter]
+    public EventCallback OnOffClick { get; set; }
+    [Parameter]
+    public EventCallback<bool> OnClick { get; set; }
+
+    private bool _toggleStatus;
+    private string ToggleClass => _toggleStatus ? "boostrap-switch-on" : "boostrap-switch-off";
+    private string ToggleMarginLeft => _toggleStatus ? $"-{(Width/2).ToString()}px" : "0px;";
+    private async Task Toggle()
+    {
+        _toggleStatus = !_toggleStatus;
+        EventCallback evt = _toggleStatus ? OnOnClick : OnOffClick;
+        await evt.InvokeAsync(null);
+        await OnClick.InvokeAsync(_toggleStatus);
+    }
+}

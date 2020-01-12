@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using WeReduxBlazor;
 using WeRedux.BlazorTest.Data;
 
 namespace WeRedux.BlazorTest
@@ -28,7 +29,8 @@ namespace WeRedux.BlazorTest
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddSingleton<WeatherForecastService>();
-            services.AddScoped<IStore<CounterState, IAction>, Store<CounterState, IAction>>(services=>
+            services.AddStore<CounterState, IAction>("Counter 1").AddStore<CounterState2, IAction>("Counter 2");
+            /*services.AddScoped<IStore<CounterState, IAction>, Store<CounterState, IAction>>(services=>
             {
                 return new Store<CounterState, IAction>(
                     cfg =>
@@ -37,6 +39,16 @@ namespace WeRedux.BlazorTest
                     }
                     );
             });
+            services.AddScoped<IStore<CounterState2, IAction>, Store<CounterState2, IAction>>(services =>
+            {
+                return new Store<CounterState2, IAction>(
+                    cfg =>
+                    {
+                        cfg.CreateMap<CounterState2, CounterState2>();
+                    }
+                    );
+            });*/
+            services.AddStorage();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

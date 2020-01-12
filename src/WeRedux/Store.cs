@@ -5,6 +5,10 @@ using System.Collections.Generic;
 using System.Reactive.Subjects;
 using System.Reflection;
 using System.Reactive.Linq;
+#if DEBUG
+using System.Diagnostics;
+#endif
+
 namespace WeRedux
 {
     public class Store<TState, TAction> : IStore<TState, TAction>
@@ -31,7 +35,6 @@ namespace WeRedux
         public Store()
         {
             Assembly[] _assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            //this._initialState = this._state = new TState();
             MapperConfiguration cfg = new MapperConfiguration(c =>
             {
                 c.AddMaps(_assemblies);
@@ -43,37 +46,29 @@ namespace WeRedux
             }
 
             _mapper = cfg.CreateMapper();
-            //_onInitialStateChanged.OnNext(_initialState);
             Initialization();
         }
         public Store(Profile profile)
         {
-            //this._initialState = this._state = new TState();
             MapperConfiguration cfg = new MapperConfiguration(c =>
             {
                 if (profile != null)
                     c.AddProfile(profile);
             });
             _mapper = cfg.CreateMapper();
-            //_onInitialStateChanged.OnNext(_initialState);
             Initialization();
         }
-        public Store(Action<IMapperConfigurationExpression> map)
+        public Store(Action<IMapperConfigurationExpression> map,string name=null)
         {
-            //this._initialState = this._state = new TState();
             MapperConfiguration cfg = new MapperConfiguration(map);
             _mapper = cfg.CreateMapper();
-            //_onInitialStateChanged.OnNext(_initialState);
-            Initialization();
+            Initialization(name);
         }
-        /*  public Store(Profile profile) : this(new TState(), profile)
-          {
 
-          }*/
 
-        protected virtual void Initialization()
+        protected virtual void Initialization(string name=null)
         {
-
+            Name = name ?? GenerateName();
             OnInitialStateChanged.Subscribe(state =>
             {
                 History.Clear();
@@ -94,6 +89,7 @@ namespace WeRedux
         #endregion
 
         #region Public Properties
+        public string Name { get; set; }
         public String CurrentMutation { get; private set; }
         public bool Travelling { get; private set; } = false;
         public TState State
@@ -116,7 +112,7 @@ namespace WeRedux
             {
                 if (value == null)
                     throw new ArgumentNullException("Initial State cannot be null");
-            _initialState = value;
+                _initialState = value;
                 _onInitialStateChanged.OnNext(value);
             }
         }
@@ -124,7 +120,7 @@ namespace WeRedux
         public TState LastState => History.Last().ActionState.State;
         protected IMapper Mapper => _mapper;
 
-        public IList<HistoricEntry<TState, TAction>> History => _history;
+        public List<HistoricEntry<TState, TAction>> History => _history;
         #endregion
 
         #region Events
@@ -210,33 +206,30 @@ namespace WeRedux
         }
         #endregion
 
-        #region IDisposable
 
-#pragma warning disable CA1063 // Implement IDisposable Correctly
-        public void Dispose()
-#pragma warning restore CA1063 // Implement IDisposable Correctly
-        {
-            foreach (var reducer in reducers)
-            {
-                reducer.Dispose();
-            }
-            _onReduced.Dispose();
-            _onChanged.Dispose();
-            _onAdd.Dispose();
-            _onTimeTravel.Dispose();
-            _onMutation.Dispose();
-        }
-
-        #endregion
 
 
         #region Travel
         public void TravelTo(int index)
         {
-            _onTimeTravel.OnNext(true);
-            var hstate = History[index];
-            State = hstate.ActionState.NewState;
-            _onTimeTravel.OnNext(false);
+            try
+            {
+                _onTimeTravel.OnNext(true);
+                var hstate = History[index];
+                State = hstate.ActionState.NewState;
+            }
+            catch (Exception)
+            {
+#if DEBUG
+                Debugger.Break();
+#endif
+            }
+            finally
+            {
+                _onTimeTravel.OnNext(false);
+            }
+
+
 
         }
 
@@ -250,6 +243,59 @@ namespace WeRedux
 
         }
         #endregion
+        private string GenerateName() => Guid.NewGuid().ToString();
+        public override string ToString()
+        {
+            return Name;
+        }
+
+
+        #region IDisposable Support
+        private bool disposedValue = false; // Pour détecter les appels redondants
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    // TODO: supprimer l'état managé (objets managés).
+
+                    foreach (var reducer in reducers)
+                    {
+                        reducer.Dispose();
+                    }
+                    _onReduced.Dispose();
+                    _onChanged.Dispose();
+                    _onAdd.Dispose();
+                    _onTimeTravel.Dispose();
+                    _onMutation.Dispose();
+                }
+
+                // TODO: libérer les ressources non managées (objets non managés) et remplacer un finaliseur ci-dessous.
+                // TODO: définir les champs de grande taille avec la valeur Null.
+
+                disposedValue = true;
+            }
+        }
+
+        // TODO: remplacer un finaliseur seulement si la fonction Dispose(bool disposing) ci-dessus a du code pour libérer les ressources non managées.
+        // ~StorageBase()
+        // {
+        //   // Ne modifiez pas ce code. Placez le code de nettoyage dans Dispose(bool disposing) ci-dessus.
+        //   Dispose(false);
+        // }
+
+        // Ce code est ajouté pour implémenter correctement le modèle supprimable.
+        public void Dispose()
+        {
+            // Ne modifiez pas ce code. Placez le code de nettoyage dans Dispose(bool disposing) ci-dessus.
+            Dispose(true);
+            // TODO: supprimer les marques de commentaire pour la ligne suivante si le finaliseur est remplacé ci-dessus.
+            // GC.SuppressFinalize(this);
+        }
+        #endregion
+
 
     }
 }

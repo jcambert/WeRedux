@@ -2,6 +2,7 @@
 using Microsoft.JSInterop;
 using System;
 using System.Text.Json;
+using System.Threading.Tasks;
 using WeRedux;
 namespace WeReduxBlazor
 {
@@ -13,14 +14,7 @@ namespace WeReduxBlazor
         {
 
         }
-        [JSInvokable("DevToolsReady")]
-        public void DevToolsReady(string message)
-        {
-            this.Message = message;
-           // this.StateHasChanged();
-        }
 
-        public string Message { get; set; }
 
         public void Dispatch(TAction action)
         {
@@ -36,18 +30,21 @@ namespace WeReduxBlazor
         [JSInvokable("Reset")]
         public void Reset()
         {
+            Console.WriteLine($"Reset Store {Store.Name}");
             Store.Reset();
         }
 
         [JSInvokable("Dispatch")]
         public void Dispatch(string action)
         {
+            Console.WriteLine($"Disptach action {action} to Store {Store.Name}");
             Store.Dispatch(action);
         }
 
         [JSInvokable("TravelTo")]
         public void TravelTo(int index)
         {
+            Console.WriteLine($"Travel Store {Store.Name} to Index {index}");
             Store.TravelTo(index);
         }
 
@@ -71,6 +68,31 @@ namespace WeReduxBlazor
         public IObservable<string> OnMutation => Store.OnMutation;
 
         public IObservable<IActionState<TState, TAction>> OnAdd => Store.OnAdd;
+
+        public async Task SaveTolocalstorageAsync()
+        {
+            if (!UseLocalStorage || LocalStorage == null) return;
+
+            await LocalStorage.SetItemAsync(Name, Store.ToJson());
+        }
+        public async Task LoadFromLocalStorageAsync()
+        {
+            if (!UseLocalStorage || LocalStorage == null) return;
+            var content=await LocalStorage.GetItemAsync(Name);
+            if (string.IsNullOrEmpty( content)) return;
+            var history= content.GetHistoryContent();
+            foreach (var action in history.Actions)
+            {
+                Dispatch(action);
+            }
+            TravelTo(history.Actions.Count-1);
+        }
+
+        public async Task ClearLocalStorageAsync()
+        {
+            if (!UseLocalStorage || LocalStorage == null) return;
+            await LocalStorage.ClearAsync();
+        }
 
         public override string ToString()
         {

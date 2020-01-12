@@ -18,4 +18,17 @@ namespace WeRedux.BlazorTest
 
         public override string ToString() => $"Count:{Count} - Template:{Template}";
     }
+
+    public class CounterState2
+    {
+        public CounterState2()
+        {
+
+        }
+
+
+        public int Count { get; internal set; } = 0;
+
+        public override string ToString() => $"Count:{Count} -";
+    }
 }

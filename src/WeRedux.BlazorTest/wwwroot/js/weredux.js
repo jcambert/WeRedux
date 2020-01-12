@@ -1,4 +1,4 @@
-﻿
+﻿/*
 (function () {
 
     var extension = window.__REDUX_DEVTOOLS_EXTENSION__;
@@ -9,18 +9,6 @@
         console.log('You can play with Redux DevTools Extensions');
     }
 
-    //var config = { name: 'Blazor Redux' };
-
-
-
-
-    /* var devTools = extension.connect(config);
-     if (!devTools) {
-         console.log('Unable to connect to Redux DevTools.');
-         return;
-     } else {
-         console.log('Your are connected to Redux DevTools');
-     }*/
 
 
     var constructor = function (dotnetref, name) {
@@ -78,13 +66,7 @@
         return weredux;
     }
 
-    window.addStore = function (dotnetref, name, initialState) {
-        _name = name.toLowerCase();
-        window.weredux[_name] = constructor(dotnetref, name);
-        window.weredux[_name].connect();
-        window.weredux[_name].init(initialState);
-        console.log("The Store with name:" + name + " was successfully created");
-    }
+
 
     var subscribe = function (weredux) {
         weredux.devTools.subscribe((message) => {
@@ -116,7 +98,14 @@
 
 
 
+    window.addStore = function (dotnetref, name, initialState) {
+        _name = name.toLowerCase();
+        window.weredux[_name] = constructor(dotnetref, name);
+        window.weredux[_name].connect();
+        window.weredux[_name].init(initialState);
+        console.log("The Store with name:" + name + " was successfully created");
+    }
 
 
+}());*/
 
-}());

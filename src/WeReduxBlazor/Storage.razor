@@ -1,0 +1,11 @@
+﻿@typeparam TState
+@typeparam TAction
+@typeparam TStorage
+<h3>Storage</h3>
+
+@code {
+    [Parameter]
+    public RenderFragment<ReduxDevTools<TState, TAction>> ChildContent { get; set; }
+
+
+}

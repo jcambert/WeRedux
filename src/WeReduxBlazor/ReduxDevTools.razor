@@ -5,44 +5,84 @@
 
 
 
-<h3>ReduxDevTools - @Message </h3>
+<h3>ReduxDevTools </h3>
 @ChildContent
 
+@if (AllowDebug)
+{
+    <ul class="list-group">
+        @foreach (var entry in Store.History)
+        {
+            <li class="list-group-item"> @Debug(entry)</li>
+        }
 
+    </ul>
+
+}
 @code {
+    private bool _allowDebug = false;
     [Parameter]
-    public string  Name { get; set; }
+    public string Name { get; set; }
 
     [Parameter]
     public int HistorySize { get; set; } = -1;
     [Parameter]
     public RenderFragment ChildContent { get; set; }
+    [Parameter]
+    public bool UseLocalStorage { get; set; } = false;
+    [Parameter]
+    public bool AllowDebug
+    {
+        get { return _allowDebug; }
+        set
+        {
+            _allowDebug = value;
+            StateHasChanged();
+        }
+    }
 
-    public RenderFragment Script { get; set; }
+    [Parameter]
+    public RenderFragment<HistoricEntry<TState, TAction>> Debug { get; set; }
+
+
+    [Inject]
+    public LocalStorage LocalStorage { get; set; }
+
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
-            await JSRuntime.InvokeVoidAsync("window.addStore", DotNetObjectReference.Create(this),this.Name,this.ToString());
+            await JSRuntime.InvokeVoidAsync("window.addStore", DotNetObjectReference.Create(this), this.Name, this.ToString());
 
             Store.OnMutation.Subscribe(async (mutation) =>
             {
                 await JSRuntime.InvokeVoidAsync($"window.weredux.{this.Name.ToLowerInvariant()}.onMutation", mutation);
+                await SaveTolocalstorageAsync();
             });
-            Store.OnChanged.Subscribe(async(o) =>
+            Store.OnChanged.Subscribe(async (o) =>
             {
                 await JSRuntime.InvokeVoidAsync($"window.weredux.{this.Name.ToLowerInvariant()}.onChanged", this.ToString());
             });
-            Store.OnTimeTravel.Subscribe( (travel) => {
+            Store.OnTimeTravel.Subscribe((travel) =>
+            {
                 if (!travel)
                     this.StateHasChanged();
             });
             Store.OnInitialStateChanged.Subscribe(async (State) =>
             {
                 await JSRuntime.InvokeVoidAsync($"window.weredux.{this.Name.ToLowerInvariant()}.init", this.ToString());
+                await ClearLocalStorageAsync();
             });
-           // await JSRuntime.InvokeVoidAsync($"window.weredux[{this.Name}].init", this.ToString());
+            // await JSRuntime.InvokeVoidAsync($"window.weredux[{this.Name}].init", this.ToString());
+            await LoadFromLocalStorageAsync();
+
+            if (UseLocalStorage && LocalStorage != null)
+                LocalStorage.OnStorageChanged.Subscribe(evt =>
+                {
+                    Console.WriteLine($"localstore {evt.Key} change from {evt.OldValue} to {evt.NewValue}");
+                });
+
         }
 
     }

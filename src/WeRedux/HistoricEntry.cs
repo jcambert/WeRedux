@@ -3,15 +3,22 @@
 namespace WeRedux
 {
     public class HistoricEntry<TState, TAction>
-        where TState:new()
-        where TAction:IAction
+        where TState : new()
+        where TAction : IAction
     {
-        public HistoricEntry(IActionState<TState, TAction> actionState )
+        public HistoricEntry(IActionState<TState, TAction> actionState)
         {
             ActionState = actionState;
         }
 
         public IActionState<TState, TAction> ActionState { get; }
         public DateTime Time { get; } = DateTime.UtcNow;
+
+        public string Mutation =>ActionState.Action.GetName()??"@@INIT";
+
+        public override string ToString()
+        {
+            return $"Historic entry with Action {Mutation}";
+        }
     }
 }

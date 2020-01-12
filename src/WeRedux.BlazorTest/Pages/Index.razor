@@ -1,20 +1,34 @@
 ﻿@page "/"
-
+@inject LocalStorage storage
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
-<ReduxDevTools TState="CounterState" TAction="IAction" @ref="reduxCounterState" HistorySize="10" Name="Counter">
-    <button @onclick="increment">Increment</button><button @onclick="decrement" >Decrement</button>
-    <h3>Counter: @reduxCounterState.State.Count</h3>
+<button class="btn btn-custom-color" @onclick="@(async()=>await storage.ClearAsync())">Clear Storage</button>
+<ReduxDevTools TState="CounterState" TAction="IAction" @ref="reduxCounterState" HistorySize="10" Name="Counter" UseLocalStorage="true" AllowDebug="IsDebugging">
+    <ChildContent>
+        <button @onclick="increment">Increment</button><button @onclick="decrement">Decrement</button>
+        <h3>Counter: @reduxCounterState.State.Count</h3>
+        <SwitchButton LabelOn="OUI" LabelOff="NON" OnClick="@(async(value)=>IsDebugging=value)" ColorOn="primary" ColorOff="custom-color"></SwitchButton>
+
+    </ChildContent>
+    
+    <Debug Context="entry" >
+        @entry.Mutation
+    </Debug>
+    
 </ReduxDevTools>
-<ReduxDevTools TState="CounterState" TAction="IAction" @ref="reduxCounterState2" HistorySize="10" Name="Counter2" >
-    <button @onclick="()=>reduxCounterState2.Store.Dispatch<DecrementCounter>()">Decrement</button><button @onclick="()=>reduxCounterState2.Store.Dispatch<IncrementCounter>()">Increment</button>
+
+<ReduxDevTools TState="CounterState2" TAction="IAction" @ref="reduxCounterState2" HistorySize="10" Name="Counter2" UseLocalStorage="true">
+    <button @onclick="()=>reduxCounterState2.Store.Dispatch<DecrementCounter2>()">Decrement</button><button @onclick="()=>reduxCounterState2.Store.Dispatch<IncrementCounter2>()">Increment</button>
     <h3>Counter: @reduxCounterState2.State.Count</h3>
+
 </ReduxDevTools>
 
 @code{
     public WeReduxBlazor.ReduxDevTools<CounterState, IAction> reduxCounterState { get; set; }
-    public WeReduxBlazor.ReduxDevTools<CounterState, IAction> reduxCounterState2 { get; set; }
+    public WeReduxBlazor.ReduxDevTools<CounterState2, IAction> reduxCounterState2 { get; set; }
+
+    public bool IsDebugging { get; set; }
 
     public void increment()
     {
@@ -25,19 +39,30 @@ Welcome to your new app.
         reduxCounterState.Store.Dispatch<DecrementCounter>();
     }
 
-    protected override void OnAfterRender(bool firstRender)
+    protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         base.OnAfterRender(firstRender);
         if (firstRender)
         {
+
             reduxCounterState.Store.On<IncrementCounter>().Subscribe(action =>
             {
                 var a = action.Action as IncrementCounter;
                 action.NewState.Count += a.Step;
             });
+            reduxCounterState2.Store.On<IncrementCounter2>().Subscribe(action =>
+            {
+                var a = action.Action as IncrementCounter2;
+                action.NewState.Count += a.Step;
+            });
             reduxCounterState.Store.On<DecrementCounter>().Subscribe(action =>
             {
                 var a = action.Action as DecrementCounter;
+                action.NewState.Count -= a.Step;
+            });
+            reduxCounterState2.Store.On<DecrementCounter2>().Subscribe(action =>
+            {
+                var a = action.Action as DecrementCounter2;
                 action.NewState.Count -= a.Step;
             });
 
