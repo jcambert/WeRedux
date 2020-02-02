@@ -30,24 +30,7 @@ namespace WeRedux.BlazorTest
             services.AddServerSideBlazor();
             services.AddSingleton<WeatherForecastService>();
             services.AddStore<CounterState, IAction>("Counter 1").AddStore<CounterState2, IAction>("Counter 2");
-            /*services.AddScoped<IStore<CounterState, IAction>, Store<CounterState, IAction>>(services=>
-            {
-                return new Store<CounterState, IAction>(
-                    cfg =>
-                    {
-                        cfg.CreateMap<CounterState, CounterState>();
-                    }
-                    );
-            });
-            services.AddScoped<IStore<CounterState2, IAction>, Store<CounterState2, IAction>>(services =>
-            {
-                return new Store<CounterState2, IAction>(
-                    cfg =>
-                    {
-                        cfg.CreateMap<CounterState2, CounterState2>();
-                    }
-                    );
-            });*/
+
             services.AddStorage();
         }
 
