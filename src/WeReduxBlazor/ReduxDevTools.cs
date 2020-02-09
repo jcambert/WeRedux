@@ -1,102 +1,127 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System;
+#if DEBUG
+using System.Diagnostics;
+#endif
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Text.Json;
 using System.Threading.Tasks;
 using WeRedux;
 namespace WeReduxBlazor
 {
-    public partial class ReduxDevTools<TState, TAction> : IStoreEvents<TState, TAction>
+    public partial class ReduxDevTools<TState, TAction>: IJsReduxInvokable,IDisposable
         where TState : new()
         where TAction : IAction
     {
+
         public ReduxDevTools()
         {
 
         }
 
 
-        public void Dispatch(TAction action)
-        {
-            Store.Dispatch(action);
-            
-        }
+        [Inject]
+        public IJSRuntime JSRuntime { get; set; }
+        [Inject]
+        public IRedux<TState, TAction> Redux { get; set; }
 
-        public void Dispatch<T>() where T : TAction, new()
+        public IStore<TState, TAction> Store => Redux?.Store;
+
+        IDisposable foo;
+        protected override async Task OnAfterRenderAsync(bool firstRender)
         {
-            Store.Dispatch<T>();
+            if (firstRender)
+            {
+                
+
+            /*    foo=Store.OnTravelTo.Subscribe((timeLaps) =>
+                {
+                        this.StateHasChanged();
+                });
+                */
+
+                await JSRuntime.InvokeVoidAsync("window.addStore", DotNetObjectReference.Create(this), Redux.Name, this.ToString());
+
+                Store.OnChanged.Subscribe(async (o) =>
+                {
+
+                    await JSRuntime.InvokeVoidAsync($"window.weredux.{Redux.Name.ToLowerInvariant()}.onChanged", o.Mutation, JsonSerializer.Serialize(o.State));
+                    await Redux.SaveTolocalstorageAsync();
+                });
+
+                Store.OnInitialStateChanged.Subscribe(async (State) =>
+                {
+                    await Redux.ClearLocalStorageAsync();
+                    await JSRuntime.InvokeVoidAsync($"window.weredux.{Redux.Name.ToLowerInvariant()}.init", JsonSerializer.Serialize(State));
+
+                });
+
+                await Redux.LoadStoreAsync();
+            }
+
+
         }
 
         [JSInvokable("Reset")]
         public void Reset()
         {
             Console.WriteLine($"Reset Store {Store.Name}");
-            Store.Reset();
+            Redux.Reset();
         }
 
         [JSInvokable("Dispatch")]
         public void Dispatch(string action)
         {
             Console.WriteLine($"Disptach action {action} to Store {Store.Name}");
-            Store.Dispatch(action);
+            Redux.Dispatch(action);
         }
 
         [JSInvokable("TravelTo")]
         public void TravelTo(int index)
         {
             Console.WriteLine($"Travel Store {Store.Name} to Index {index}");
-            Store.TravelTo(index);
+            Redux.TravelTo(index);
         }
 
-        private IStore<TState, TAction> _store;
-        [Inject]
-        public IStore<TState, TAction> Store
+        #region IDisposable Support
+        private bool disposedValue = false; // Pour détecter les appels redondants
+
+        protected virtual void Dispose(bool disposing)
         {
-            get { return _store; }
-            set { _store = value; }
-        }
-        public TState State => Store.State;
-        [Inject] IJSRuntime JSRuntime { get; set; }
-        public IObservable<TState> OnChanged => Store.OnChanged;
-
-        public IObservable<TState> OnReduced => Store.OnReduced;
-
-        public IObservable<bool> OnTimeTravel => Store.OnTimeTravel;
-
-        public IObservable<TState> OnInitialStateChanged => Store.OnInitialStateChanged;
-
-        public IObservable<string> OnMutation => Store.OnMutation;
-
-        public IObservable<IActionState<TState, TAction>> OnAdd => Store.OnAdd;
-
-        public async Task SaveTolocalstorageAsync()
-        {
-            if (!UseLocalStorage || LocalStorage == null) return;
-
-            await LocalStorage.SetItemAsync(Name, Store.ToJson());
-        }
-        public async Task LoadFromLocalStorageAsync()
-        {
-            if (!UseLocalStorage || LocalStorage == null) return;
-            var content=await LocalStorage.GetItemAsync(Name);
-            if (string.IsNullOrEmpty( content)) return;
-            var history= content.GetHistoryContent();
-            foreach (var action in history.Actions)
+            if (!disposedValue)
             {
-                Dispatch(action);
+                if (disposing)
+                {
+                    // TODO: supprimer l'état managé (objets managés).
+                    Console.WriteLine("ReduxDevTools Dispose Foo");
+                    foo?.Dispose();
+                }
+
+                // TODO: libérer les ressources non managées (objets non managés) et remplacer un finaliseur ci-dessous.
+                // TODO: définir les champs de grande taille avec la valeur Null.
+
+                disposedValue = true;
             }
-            TravelTo(history.Actions.Count-1);
         }
 
-        public async Task ClearLocalStorageAsync()
-        {
-            if (!UseLocalStorage || LocalStorage == null) return;
-            await LocalStorage.ClearAsync();
-        }
+        // TODO: remplacer un finaliseur seulement si la fonction Dispose(bool disposing) ci-dessus a du code pour libérer les ressources non managées.
+        // ~ReduxDevTools()
+        // {
+        //   // Ne modifiez pas ce code. Placez le code de nettoyage dans Dispose(bool disposing) ci-dessus.
+        //   Dispose(false);
+        // }
 
-        public override string ToString()
+        // Ce code est ajouté pour implémenter correctement le modèle supprimable.
+        public void Dispose()
         {
-            return JsonSerializer.Serialize(State);
+            // Ne modifiez pas ce code. Placez le code de nettoyage dans Dispose(bool disposing) ci-dessus.
+            Dispose(true);
+            // TODO: supprimer les marques de commentaire pour la ligne suivante si le finaliseur est remplacé ci-dessus.
+            // GC.SuppressFinalize(this);
         }
+        #endregion
+
     }
 }

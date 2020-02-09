@@ -7,7 +7,11 @@ namespace WeRedux.Samples
         static void Main()
         {
             
-            var store = new Store<CounterState, IAction>();
+            var store = new Store<CounterState, IAction>("My Store", cfg =>
+            {
+                cfg.CreateMap<CounterState, CounterState>();
+               
+            });
             store.OnReduced.Subscribe(state =>
             {
                 Console.WriteLine($"State Count has Changed :{state}");
@@ -20,14 +24,14 @@ namespace WeRedux.Samples
             store.On<IncrementCounter>().Subscribe(action =>
             {
                 Console.WriteLine($"Call IncrementCounter Subscriber");
-                var a = action.Action as IncrementCounter;
-                action.NewState.Count = action.State.Count + a.Step;
+                var a = action as IncrementCounter;
+                store.State.Count+=  a.Step;
             });
             store.On<DecrementCounter>().Subscribe(action =>
             {
                 Console.WriteLine($"Call DecrementCounter Subscriber");
-                var a = action.Action as DecrementCounter;
-                action.NewState.Count = action.State.Count - a.Step;
+                var a = action as DecrementCounter;
+                store.State.Count =  - a.Step;
             });
             store.On<TemplateAction>().Subscribe(action =>
             {

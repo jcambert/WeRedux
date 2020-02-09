@@ -4,10 +4,10 @@
 
 Welcome to your new app.
 <button class="btn btn-custom-color" @onclick="@(async()=>await storage.ClearAsync())">Clear Storage</button>
-<ReduxDevTools TState="CounterState" TAction="IAction" @ref="reduxCounterState" HistorySize="10" Name="Counter" UseLocalStorage="true" AllowDebug="IsDebugging">
+<ReduxDevTools TState="CounterState" TAction="IAction" @ref="reduxCounterState" AllowDebug="IsDebugging">
     <ChildContent>
-        <button @onclick="increment">Increment</button><button @onclick="decrement">Decrement</button>
-        <h3>Counter: @reduxCounterState.State.Count</h3>
+        <button @onclick="increment">Increment</button><button @onclick="decrement">Decrement</button><button @onclick="incrementByQuery">Increment By Query</button>
+        <h3>Counter: @reduxCounterState.Store.State.Count</h3>
         <SwitchButton LabelOn="OUI" LabelOff="NON" OnClick="@(async(value)=>IsDebugging=value)" ColorOn="primary" ColorOff="custom-color"></SwitchButton>
 
     </ChildContent>
@@ -18,9 +18,9 @@ Welcome to your new app.
     
 </ReduxDevTools>
 
-<ReduxDevTools TState="CounterState2" TAction="IAction" @ref="reduxCounterState2" HistorySize="10" Name="Counter2" UseLocalStorage="true">
+<ReduxDevTools TState="CounterState2" TAction="IAction" @ref="reduxCounterState2">
     <button @onclick="()=>reduxCounterState2.Store.Dispatch<DecrementCounter2>()">Decrement</button><button @onclick="()=>reduxCounterState2.Store.Dispatch<IncrementCounter2>()">Increment</button>
-    <h3>Counter: @reduxCounterState2.State.Count</h3>
+    <h3>Counter: @reduxCounterState2.Store.State.Count</h3>
 
 </ReduxDevTools>
 
@@ -30,9 +30,15 @@ Welcome to your new app.
 
     public bool IsDebugging { get; set; }
 
+    public void incrementByQuery()
+    {
+        reduxCounterState.Store.Dispatch("INCREMENTCOUNTER?Step=2");
+    }
+
     public void increment()
     {
         reduxCounterState.Store.Dispatch<IncrementCounter>();
+
     }
     public void decrement()
     {
@@ -44,26 +50,37 @@ Welcome to your new app.
         base.OnAfterRender(firstRender);
         if (firstRender)
         {
-
+            reduxCounterState.Store.OnChanged.Subscribe(mutation =>
+            {
+                Console.WriteLine($"a mutation 1 happened:{mutation.Mutation}");
+            });
+            reduxCounterState2.Store.OnChanged.Subscribe(mutation =>
+            {
+                Console.WriteLine($"a mutation 2 happened:{mutation.Mutation}");
+            });
             reduxCounterState.Store.On<IncrementCounter>().Subscribe(action =>
             {
-                var a = action.Action as IncrementCounter;
-                action.NewState.Count += a.Step;
+                var a = action as IncrementCounter;
+                reduxCounterState.Store.State.Count += a.Step;
+                reduxCounterState.Store.StateChanged(action);
             });
             reduxCounterState2.Store.On<IncrementCounter2>().Subscribe(action =>
             {
-                var a = action.Action as IncrementCounter2;
-                action.NewState.Count += a.Step;
+                var a = action as IncrementCounter2;
+                reduxCounterState2.Store.State.Count += a.Step;
+                reduxCounterState2.Store.StateChanged(action);
             });
             reduxCounterState.Store.On<DecrementCounter>().Subscribe(action =>
             {
-                var a = action.Action as DecrementCounter;
-                action.NewState.Count -= a.Step;
+                var a = action as DecrementCounter;
+                reduxCounterState.Store.State.Count -= a.Step;
+                reduxCounterState.Store.StateChanged(action);
             });
             reduxCounterState2.Store.On<DecrementCounter2>().Subscribe(action =>
             {
-                var a = action.Action as DecrementCounter2;
-                action.NewState.Count -= a.Step;
+                var a = action as DecrementCounter2;
+                reduxCounterState2.Store.State.Count -= a.Step;
+                reduxCounterState2.Store.StateChanged(action);
             });
 
         }

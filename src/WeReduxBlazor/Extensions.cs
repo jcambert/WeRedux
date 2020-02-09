@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using System;
 using System.Collections.Generic;
@@ -14,25 +15,49 @@ namespace WeReduxBlazor
 
     public static class Extensions
     {
-        public static IServiceCollection AddStore<TState, TAction>(this IServiceCollection services,string name=null, Action<IMapperConfigurationExpression> mapper = null)
+        public static IServiceCollection AddRedux<TState, TAction>(this IServiceCollection services, string name, Action<IStore<TState, TAction>> storeOpt = null, Action<IMapperConfigurationExpression> mapper = null)
+             where TState : new()
+            where TAction : IAction
+        {
+            services
+            .AddStore<TState,TAction>(name,storeOpt,mapper)
+            .AddStorage()
+            .AddScoped<IRedux<TState, TAction>, Redux<TState, TAction>>(services =>
+            {
+                var store = services.GetRequiredService<IStore<TState, TAction>>();
+                var storage = services.GetRequiredService<LocalStorage>();
+                //var js = services.GetRequiredService<IJSRuntime>();
+                var logger = services.GetRequiredService<ILogger<Redux<TState, TAction>>>();
+                var redux = new Redux<TState, TAction>(store, storage, logger, name);
+
+                return redux;
+            });
+            return services;
+        }
+        public static IServiceCollection AddStore<TState, TAction>(this IServiceCollection services,string name, Action<IStore<TState, TAction>> opt = null, Action<IMapperConfigurationExpression> mapper = null)
             where TState : new()
             where TAction : IAction
         {
+
             services.AddScoped<IStore<TState, TAction>, Store<TState, TAction>>(services =>
             {
-                return new Store<TState, TAction>(
+               // var logger = services.GetRequiredService<ILogger<Store<TState, TAction>>>();
+                var store = new Store<TState, TAction>(name,
                     cfg =>
                     {
                         cfg.CreateMap<TState, TState>();
                         mapper?.Invoke(cfg);
-                    },name);
+                    });
+                opt?.Invoke(store);
+
+                return store;
             });
             return services;
         }
         public static IServiceCollection AddStorage(this IServiceCollection services)
         {
-            services.TryAddScoped<LocalStorage>();
-            services.TryAddScoped<SessionStorage>();
+            services.AddScoped<LocalStorage>();
+            services.AddScoped<SessionStorage>();
             return services;
         }
 

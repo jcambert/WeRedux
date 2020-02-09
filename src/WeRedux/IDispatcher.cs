@@ -1,11 +1,15 @@
-﻿namespace WeRedux
+﻿using System;
+using System.Threading.Tasks;
+
+namespace WeRedux
 {
     public interface IDispatcher<TAction>
     {
-        void Dispatch(TAction action) ;
+        void Dispatch<T>(T action) where T : TAction;
 
-        void Dispatch<T>() where T:TAction,new();
+        void Dispatch<T>(Action<T> action=null) where T : TAction, new();
 
         void Dispatch(string action);
+
     }
 }

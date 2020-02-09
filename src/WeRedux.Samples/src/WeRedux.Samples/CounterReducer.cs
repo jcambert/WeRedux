@@ -5,7 +5,7 @@ using System.Text;
 namespace WeRedux.Samples
 {
     //[Reducer(typeof(CounterState))]
-    public class CounterReducer : Reducer<CounterState, IAction>
+   /* public class CounterReducer : Reducer<CounterState, IAction>
     {
 
         
@@ -26,5 +26,5 @@ namespace WeRedux.Samples
                     break;
             }
         }
-    }
+    }*/
 }

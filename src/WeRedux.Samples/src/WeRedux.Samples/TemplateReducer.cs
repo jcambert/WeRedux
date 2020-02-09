@@ -4,7 +4,7 @@ using System.Text;
 
 namespace WeRedux.Samples
 {
-    [Reducer()]
+  /*  [Reducer()]
     public class TemplateReducer : Reducer<CounterState, IAction>
     {
         readonly string[] words = new[]{"lorem", "ipsum", "dolor", "sit", "amet", "consectetuer",
@@ -19,5 +19,5 @@ namespace WeRedux.Samples
             if(action.Action is TemplateAction)
                 action.NewState.Template = words[new Random().Next(0, words.Length - 1)];
         }
-    }
+    }*/
 }

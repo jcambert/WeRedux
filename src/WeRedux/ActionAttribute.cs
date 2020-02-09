@@ -4,7 +4,7 @@ using System.Text;
 
 namespace WeRedux
 {
-    [AttributeUsage(AttributeTargets.Class,AllowMultiple =false,Inherited =false)]
+   /* [AttributeUsage(AttributeTargets.Class,AllowMultiple =false,Inherited =false)]
     public class ActionAttribute:Attribute
     {
         public ActionAttribute(string name)
@@ -13,5 +13,5 @@ namespace WeRedux
         }
 
         public string Name { get; }
-    }
+    }*/
 }

@@ -7,17 +7,28 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Globalization;
 using System.Collections;
+using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Primitives;
+using System.Text.RegularExpressions;
+using System.Reactive.Linq;
+using System.Threading.Tasks;
+using System.Reactive.Threading.Tasks;
+using System.ComponentModel;
+#if DEBUG
+using System.Diagnostics;
+#endif
 
 namespace WeRedux
 {
+    /*
     public class ReducerTypes
     {
         public Type Type { get; internal set; }
         public ReducerAttribute Attribute { get; internal set; }
-    }
+    }*/
     public static class Extensions
     {
-        public static List<ReducerTypes> GetReducedClass<TState, TAction>(this Assembly[] assemblies)
+      /*  public static List<ReducerTypes> GetReducedClass<TState, TAction>(this Assembly[] assemblies)
             where TState : new()
             where TAction : IAction
         {
@@ -34,7 +45,7 @@ namespace WeRedux
         where TAction : IAction
         {
             return GetReducedClass<TState, TAction>(AppDomain.CurrentDomain.GetAssemblies());
-        }
+        }*/
 
         internal static string GetName<TAction>(this TAction action)
             where TAction : IAction
@@ -97,24 +108,139 @@ namespace WeRedux
             }
         }
 
-        public static string ToJson<TState,TAction>(this IStore<TState,TAction> store)
+        private static readonly object _syncRoot = new object();
+        public static string ToJson<TState, TAction>(this IStore<TState, TAction> store)
               where TState : new()
             where TAction : IAction
         {
-            HistoryContent histo = new HistoryContent();
-            
-            store.History.ForEach(h =>
-            {
-                histo.Add(h.Mutation);
-            });
-            var options = new JsonSerializerOptions();
-            options.Converters.Add(new JsonNonStringKeyDictionaryConverterFactory());
-            return JsonSerializer.Serialize(histo,typeof(HistoryContent));
+            lock (_syncRoot)
+                try
+                {
+                    HistoryContent histo = new HistoryContent();
+                    HistoricEntry<TState, TAction>[] copy = new HistoricEntry<TState, TAction>[store.History.Count];
+                    store.History.CopyTo(copy);
+                    for (int i = 0; i < copy.Length; i++)
+                    {
+                        histo.Add(copy[i].Mutation);
+                    }
+                   /* store.History.ForEach(h =>
+                    {
+                        histo.Add(h.Mutation);
+                    });*/
+                    var options = new JsonSerializerOptions();
+                    options.Converters.Add(new JsonNonStringKeyDictionaryConverterFactory());
+                    return JsonSerializer.Serialize(histo, typeof(HistoryContent));
+                }
+                catch (Exception ex)
+                {
+#if DEBUG
+                    Debugger.Break();
+#endif
+                    return string.Empty;
+
+                }
         }
 
         public static HistoryContent GetHistoryContent(this string json)
         {
             return JsonSerializer.Deserialize<HistoryContent>(json);
+        }
+
+        public static Dictionary<string, string> ToDictionary<TAction>(this TAction action)
+             where TAction : IAction
+        {
+            Type myObjectType = action.GetType();
+            Dictionary<string, string> dict = new Dictionary<string, string>();
+            var indexer = new object[0];
+            PropertyInfo[] properties = myObjectType.GetProperties();
+            foreach (var info in properties)
+            {
+                var value = info.GetValue(action, indexer);
+                dict.Add(info.Name, value.ToString());
+            }
+            return dict;
+        }
+
+        public static string AddQueryString(this string s, string name, string value)
+        {
+            return QueryHelpers.AddQueryString(s, name, value);
+        }
+
+        public static string AddQueryString(this string s, Dictionary<string, string> values)
+        {
+            return QueryHelpers.AddQueryString(s, values);
+        }
+
+        public static Dictionary<string, StringValues> ParseQuery(this string uri, out string @base)
+        {
+            var result = new Dictionary<string, StringValues>();
+            @base = uri?.Split('?')[0] ?? string.Empty;
+            var accumulator = new KeyValueAccumulator();
+            var re = new Regex(@"(?<key>\w+)=(?<value>\w+)", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.IgnoreCase);
+
+            var res = re.Matches(uri).Cast<Match>().Select(m => new
+            {
+                key = m.Groups["key"].Value.ToString(),
+                value = m.Groups["value"].Value.ToString()
+            });
+            foreach (var item in res)
+            {
+                accumulator.Append(item.key, item.value);
+            }
+            return accumulator.GetResults();
+        }
+
+        public static string GetMutation<TAction>(this TAction action)
+            where TAction : IAction
+        {
+            if(action is IStaticMutation)
+            {
+                return ((IStaticMutation)action).Mutation;
+            }
+            try
+            {
+                var mutationQuery = QueryHelpers.AddQueryString(action.GetName(), action.ToDictionary());
+                return mutationQuery;
+            }
+            catch (Exception)
+            {
+                return "@@INIT";
+            }
+        }
+
+        public static IDisposable SubscribeAsync<T>(this IObservable<T> source, Func<T, Task> onNext, Action<Exception> onError = null, Action onCompleted = null)
+        {
+            return source.Select(e => Observable.Defer(() => onNext(e).ToObservable())).Concat()
+                .Subscribe(
+                e => { }/*, 
+                onError,
+                onCompleted*/);
+        }
+
+        
+        public static bool TryCast<T>(this object obj, out T result)
+        {
+            result = default(T);
+            if (obj is T)
+            {
+                result = (T)obj;
+                return true;
+            }
+
+            // If it's null, we can't get the type.
+            if (obj != null)
+            {
+                var converter = TypeDescriptor.GetConverter(typeof(T));
+                if (converter.CanConvertFrom(obj.GetType()))
+                    result = (T)converter.ConvertFrom(obj);
+                else
+                    return false;
+
+                return true;
+            }
+
+            //Be permissive if the object was null and the target is a ref-type
+            return !typeof(T).IsValueType;
         }
     }
 
@@ -122,7 +248,7 @@ namespace WeRedux
     {
 
         public List<string> Actions { get; set; } = new List<string>();
-        
+
 
         public void Add(string action)
         {
@@ -133,16 +259,16 @@ namespace WeRedux
 
     public class ActionById
     {
-       // [JsonPropertyName("action")]
+        // [JsonPropertyName("action")]
         public ActionType ActionType { get; set; } = new ActionType();
-      //  [JsonPropertyName("timestamp")]
+        //  [JsonPropertyName("timestamp")]
         public int TimeStamp { get; set; }
         public string Type { get; set; } = "PERFORM_ACTION";
     }
 
     public class ActionType
     {
-       //[JsonPropertyName("type")]
+        //[JsonPropertyName("type")]
         public string Type { get; set; }
     }
 }

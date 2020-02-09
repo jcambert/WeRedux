@@ -5,6 +5,10 @@ using System.Collections.Generic;
 using System.Reactive.Subjects;
 using System.Reflection;
 using System.Reactive.Linq;
+using System.Text.Json;
+using Microsoft.AspNetCore.WebUtilities;
+using System.Threading.Tasks;
+using Microsoft.Extensions.Logging;
 #if DEBUG
 using System.Diagnostics;
 #endif
@@ -20,77 +24,72 @@ namespace WeRedux
         private TState _state;
         private readonly object _syncRoot = new object();
         private readonly Subject<TState> _onInitialStateChanged = new Subject<TState>();
-        private readonly Subject<TState> _onReduced = new Subject<TState>();
-        private readonly Subject<bool> _onTimeTravel = new Subject<bool>();
-        private readonly Subject<TState> _onChanged = new Subject<TState>();
-        private readonly Subject<IActionState<TState, TAction>> _onAdd = new Subject<IActionState<TState, TAction>>();
-        private readonly Subject<string> _onMutation = new Subject<string>();
-
+        //private readonly Subject<TState> _onReduced = new Subject<TState>();
+        private readonly Subject<int> _onTravelTo = new Subject<int>();
+        //private readonly Subject<TState> _onTravel = new Subject<TState>();
+        private readonly Subject<IMutationstate<TState>> _onChanged = new Subject<IMutationstate<TState>>();
+        //private readonly Subject<IActionState<TState, TAction>> _onAdd = new Subject<IActionState<TState, TAction>>();
+        //private readonly Subject<string> _onMutation = new Subject<string>();
+        //private readonly Subject<IActionState<TState, TAction>> _onMutated = new Subject<IActionState<TState, TAction>>();
         private readonly IMapper _mapper;
-        private readonly List<IReducer<TState, TAction>> reducers = new List<IReducer<TState, TAction>>();
+      //  private readonly List<IReducer<TState, TAction>> reducers = new List<IReducer<TState, TAction>>();
         private readonly List<HistoricEntry<TState, TAction>> _history = new List<HistoricEntry<TState, TAction>>();
+
+
+        private Subject<TAction> Dispatcher = new Subject<TAction>();
         #endregion
 
         #region ctor
-        public Store()
-        {
-            Assembly[] _assemblies = AppDomain.CurrentDomain.GetAssemblies();
-            MapperConfiguration cfg = new MapperConfiguration(c =>
-            {
-                c.AddMaps(_assemblies);
-            });
-            var autoTypes = _assemblies.GetReducedClass<TState, TAction>();
-            foreach (var @type in autoTypes)
-            {
-                AddReducer(@type.Type);
-            }
 
-            _mapper = cfg.CreateMapper();
-            Initialization();
-        }
-        public Store(Profile profile)
+        public Store(string name, Action<IMapperConfigurationExpression> map)
         {
-            MapperConfiguration cfg = new MapperConfiguration(c =>
-            {
-                if (profile != null)
-                    c.AddProfile(profile);
-            });
-            _mapper = cfg.CreateMapper();
-            Initialization();
-        }
-        public Store(Action<IMapperConfigurationExpression> map,string name=null)
-        {
+            Console.WriteLine("Create New Store");
+            this.Name = name;
             MapperConfiguration cfg = new MapperConfiguration(map);
             _mapper = cfg.CreateMapper();
-            Initialization(name);
+            Initialization();
+
+
         }
 
 
-        protected virtual void Initialization(string name=null)
+        protected virtual void Initialization()
         {
-            Name = name ?? GenerateName();
+
             OnInitialStateChanged.Subscribe(state =>
             {
                 History.Clear();
-                History.Add(new HistoricEntry<TState, TAction>(new ActionState<TState, TAction> { NewState = state, State = state }));
-            });
-            OnMutation.Subscribe(o =>
-            {
-                CurrentMutation = o;
-            });
-            OnAdd.Subscribe(o =>
-            {
-                History.Add(new HistoricEntry<TState, TAction>(o));
-            });
-            OnTimeTravel.Subscribe(travel => Travelling = travel);
 
+                Dispatch((TAction)(object)new InitialAction());
+                // _onMutated.OnNext(new ActionState<TState, TAction> {/* NewState = state,*/ State = state });
+
+            });
+            Dispatcher.AsObservable().Where(t => t.GetType() == typeof(InitialAction)).Subscribe(action =>
+            {
+                StateChanged(action);
+            });
+            /* OnMutation.Subscribe(o =>
+             {
+                 CurrentMutation = o;
+             });
+             OnMutated.Subscribe(o =>
+             {
+                 //allow initial state and discard duplicate identical last mutation
+                 //if(History.Count==0 || History.Last().Mutation!=o.Action.GetMutation())
+                 State = o.State;
+                 History.Add(new HistoricEntry<TState, TAction>(o));
+             });
+             OnTimeTravel.Subscribe(travel => Travelling = travel);
+
+
+          */
             this.InitialState = this._state = new TState();
         }
         #endregion
 
         #region Public Properties
-        public string Name { get; set; }
-        public String CurrentMutation { get; private set; }
+        public string Name { get; private set; }
+        public string CurrentMutation { get; private set; }
         public bool Travelling { get; private set; } = false;
         public TState State
         {
@@ -100,8 +99,10 @@ namespace WeRedux
                 if (value == null)
                     throw new ArgumentNullException("State cannot be null");
                 _state = value;
-                if (!Travelling)
-                    _onChanged.OnNext(_state);
+                //if (Travelling)
+                //    _onTravel.OnNext(_state);
+                //else
+                //    _onChanged.OnNext(new MutationState<TState>() { Mutation = CurrentMutation, State = _state });
             }
         }
 
@@ -121,104 +122,126 @@ namespace WeRedux
         protected IMapper Mapper => _mapper;
 
         public List<HistoricEntry<TState, TAction>> History => _history;
+
+        public bool IsEmpty => History.Count <= 1;//The Initial State
+
+        public bool IsReady { get; private set; } = false;
+        #endregion
+
+        #region Public Methods
+
         #endregion
 
         #region Events
         public IObservable<TState> OnInitialStateChanged => _onInitialStateChanged.AsObservable();
-        public IObservable<TState> OnChanged => _onChanged.AsObservable();
-        public IObservable<IActionState<TState, TAction>> OnAdd => _onAdd.AsObservable();
-        public IObservable<TState> OnReduced => _onReduced.AsObservable();
-        public IObservable<bool> OnTimeTravel => _onTimeTravel.AsObservable();
-        public IObservable<string> OnMutation => _onMutation.AsObservable();
+        public IObservable<IMutationstate<TState>> OnChanged => _onChanged.AsObservable();
+       // public IObservable<IActionState<TState, TAction>> OnAdd => _onAdd.AsObservable();
+        //public IObservable<TState> OnReduced => _onReduced.AsObservable();
+        public IObservable<int> OnTravelTo => _onTravelTo.AsObservable();
+        //public IObservable<TState> OnTravel => _onTravel.AsObservable();
+        //public IObservable<string> OnMutation => _onMutation.AsObservable();
+        //public IObservable<IActionState<TState, TAction>> OnMutated => _onMutated.AsObservable();
         #endregion
 
         #region Reducer
-        public void AddReducer<TReducer>()
-            where TReducer : Reducer<TState, TAction>, new()
-        {
-            this.AddReducer<TReducer>(new TReducer());
-        }
 
 
-        public void AddReducer<TReducer>(TReducer reducer)
-            where TReducer : Reducer<TState, TAction>
-        {
 
-            reducer.OnReduce.Subscribe(o =>
-            {
-                reducer.Execute(o);
-            });
-            reducers.Add(reducer);
-        }
 
-        private void AddReducer(Type type)
-        {
-            this.AddReducer(type.GetConstructor(new Type[] { }).Invoke(null) as Reducer<TState, TAction>);
-        }
 
-        public Dictionary<string, Subject<IActionState<TState, TAction>>> ObservableReducer { get; } = new Dictionary<string, Subject<IActionState<TState, TAction>>>();
-        public Dictionary<string, Type> ActionByName { get; } = new Dictionary<string, Type>();
 
-        public IObservable<IActionState<TState, TAction>> On<T>()
+        private Dictionary<string, Type> ActionByName { get; } = new Dictionary<string, Type>();
+
+
+
+
+        public IObservable<TAction> On<T>()
             where T : TAction
         {
-            Subject<IActionState<TState, TAction>> obs = new Subject<IActionState<TState, TAction>>();
             var key = typeof(T).Name.ToUpperInvariant();
-            ObservableReducer[key] = obs;
             ActionByName[key] = typeof(T);
-            return obs.AsObservable();
+            return Dispatcher.AsObservable().Where(t => t.GetType() == typeof(T));
         }
         #endregion
 
         #region Dispatcher
-        public void Dispatch(TAction action)
+
+        public void StateChanged<T>(T action) where T : TAction
+        {
+            _onChanged.OnNext(new MutationState<TState>() { Mutation = action.GetMutation(), State = State });
+        }
+
+        public void Dispatch<T>(T action) where T : TAction
         {
             lock (_syncRoot)
             {
-                _onMutation.OnNext(action.GetType().Name.ToUpperInvariant());
-                TState newState = Mapper.Map<TState, TState>(LastState, o => { o.CreateInstance<TState>(); });
-
-                foreach (var reducer in reducers)
+                var mutationQuery = action is IStaticMutation ? ((IStaticMutation)action).Mutation : QueryHelpers.AddQueryString(action.GetType().Name.ToUpperInvariant(), action.ToDictionary());
+                //_onMutation.OnNext(mutationQuery);
+                if (action is InitialAction)
                 {
-                    reducer.Reduce(newState, State, action);
+                    History.Add(new HistoricEntry<TState, TAction>(new ActionState<TState, TAction>() { State = State, Action = action }));
+                    Dispatcher.OnNext(action);
                 }
-
-                if (ObservableReducer.ContainsKey(action.GetName()))
-                    ObservableReducer[action.GetName()].OnNext(new ActionState<TState, TAction>() { NewState = newState, State = State, Action = action });
-                State = newState;
-                _onAdd.OnNext(new ActionState<TState, TAction>() { NewState = newState, State = State, Action = action });
-                _onReduced.OnNext(State);
+                else
+                {
+                    TState newState = new TState();
+                    Mapper.Map<TState, TState>(LastState, newState);// ,o => { o.CreateInstance<TState>(); });
+                    State = newState;
+                    History.Add(new HistoricEntry<TState, TAction>(new ActionState<TState, TAction>() { State = newState, Action = action }));
+                    Dispatcher.OnNext(action);
+                }
 
             }
         }
+
+
         public void Dispatch<T>() where T : TAction, new()
         {
             this.Dispatch(new T());
         }
 
+        public void Dispatch<T>(Action<T> action) where T : TAction, new()
+        {
+            T t = new T();
+            action?.Invoke(t);
+            this.Dispatch(t);
+        }
+
+
         public void Dispatch(string action)
         {
-            var key = action.Trim().ToUpperInvariant();
+            //var key = action.Trim().ToUpperInvariant();
+            string key;
+            var queries = QueryHelpers.ParseQuery(action);
+            var qs = action.ParseQuery(out key);
             if (ActionByName.ContainsKey(key))
             {
-                Dispatch((TAction)ActionByName[key].GetConstructor(new Type[] { }).Invoke(null));
+                Type type = ActionByName[key];
+                TAction _action = (TAction)type.GetConstructor(new Type[] { }).Invoke(null);
+                foreach (var q in qs)
+                {
+                    var method = type.GetProperty(q.Key);
+                    var value = Convert.ChangeType(q.Value.FirstOrDefault(), method.PropertyType);
+                    method?.GetSetMethod()?.Invoke(_action, new object[] { value });
+                }
+                Dispatch(_action);
             }
         }
+
         #endregion
-
-
-
 
         #region Travel
         public void TravelTo(int index)
         {
+            Travelling = true;
             try
             {
-                _onTimeTravel.OnNext(true);
+
                 var hstate = History[index];
-                State = hstate.ActionState.NewState;
+                State = hstate.ActionState.State;
+                _onTravelTo.OnNext(index);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
 #if DEBUG
                 Debugger.Break();
@@ -226,10 +249,10 @@ namespace WeRedux
             }
             finally
             {
-                _onTimeTravel.OnNext(false);
+                Travelling = false;
             }
 
-
+           
 
         }
 
@@ -261,15 +284,15 @@ namespace WeRedux
                 {
                     // TODO: supprimer l'état managé (objets managés).
 
-                    foreach (var reducer in reducers)
+                  /*  foreach (var reducer in reducers)
                     {
                         reducer.Dispose();
                     }
-                    _onReduced.Dispose();
+                    _onReduced.Dispose();*/
                     _onChanged.Dispose();
-                    _onAdd.Dispose();
-                    _onTimeTravel.Dispose();
-                    _onMutation.Dispose();
+                    //_onAdd.Dispose();
+                    //_onTravelTo.Dispose();
+                    //_onMutation.Dispose();
                 }
 
                 // TODO: libérer les ressources non managées (objets non managés) et remplacer un finaliseur ci-dessous.
@@ -294,6 +317,16 @@ namespace WeRedux
             // TODO: supprimer les marques de commentaire pour la ligne suivante si le finaliseur est remplacé ci-dessus.
             // GC.SuppressFinalize(this);
         }
+
+
+
+
+
+
+
+
+
+
         #endregion
 
 

@@ -20,7 +20,7 @@
                 this.devTools = extension.connect({ name: name + ' State' });
                 if (this.devTools) {
                     console.log('Your are connected to Redux DevTools');
-                    subscribe(weredux);
+                    subscribe(this);
                     console.log('You are listenning DevTools Events');
                 } else {
                     console.log('Unable to connect to Redux DevTools.');
@@ -47,16 +47,18 @@
                     this.dotnetref.invokeMethodAsync('Dispatch', action);
             },
             travelTo: function (index) {
+                console.log('Travel to:',index);
                 this.dotnetref.invokeMethodAsync('TravelTo', index);
             },
 
             onMutation: function (mutation) {
                 this.mutation = mutation;
+                console.log(mutation);
             },
-            onChanged: function (state) {
-                console.log('State changed to:', state);
-
-                this.devTools.send(this.mutation, state);
+            onChanged: function (mutation,state) {
+                console.log('State changed to:',mutation,' State', state);
+                this.devTools.send(mutation, state);
+                
             }
         }
 
