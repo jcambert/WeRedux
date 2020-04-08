@@ -5,6 +5,6 @@
         string Mutation { get; }
     }
     public interface IAction
-    { 
+    {
     }
 }

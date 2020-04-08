@@ -1,8 +1,9 @@
 ﻿using WeRedux;
 
-namespace WeReduxBlazor { 
+namespace WeReduxBlazor
+{
 
-    public class LoadedAction:IAction
+    public class LoadedAction : IAction
     {
     }
 }

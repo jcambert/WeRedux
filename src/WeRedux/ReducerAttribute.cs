@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace WeRedux
+﻿namespace WeRedux
 {
- /*   [AttributeUsage(AttributeTargets.Class,AllowMultiple =true,Inherited =false)]
-    public class ReducerAttribute : Attribute
-    {
-        public ReducerAttribute()
-        {
+    /*   [AttributeUsage(AttributeTargets.Class,AllowMultiple =true,Inherited =false)]
+       public class ReducerAttribute : Attribute
+       {
+           public ReducerAttribute()
+           {
 
-        }
-    }*/
+           }
+       }*/
 }

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Linq;
 using System.Collections.Generic;
-using System.Text;
 using System.Reflection;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -28,24 +27,24 @@ namespace WeRedux
     }*/
     public static class Extensions
     {
-      /*  public static List<ReducerTypes> GetReducedClass<TState, TAction>(this Assembly[] assemblies)
-            where TState : new()
-            where TAction : IAction
-        {
-            var typesWithMyAttribute =
-                from a in assemblies
-                from t in a.GetTypes()
-                let attributes = t.GetCustomAttributes(typeof(ReducerAttribute), true)
-                where attributes != null && attributes.Length > 0 && typeof(Reducer<TState, TAction>).IsAssignableFrom(t)
-                select new ReducerTypes { Type = t, Attribute = attributes.First() as ReducerAttribute };
-            return typesWithMyAttribute.ToList();
-        }
-        public static List<ReducerTypes> GetReducedClass<TState, TAction>()
-        where TState : new()
-        where TAction : IAction
-        {
-            return GetReducedClass<TState, TAction>(AppDomain.CurrentDomain.GetAssemblies());
-        }*/
+        /*  public static List<ReducerTypes> GetReducedClass<TState, TAction>(this Assembly[] assemblies)
+              where TState : new()
+              where TAction : IAction
+          {
+              var typesWithMyAttribute =
+                  from a in assemblies
+                  from t in a.GetTypes()
+                  let attributes = t.GetCustomAttributes(typeof(ReducerAttribute), true)
+                  where attributes != null && attributes.Length > 0 && typeof(Reducer<TState, TAction>).IsAssignableFrom(t)
+                  select new ReducerTypes { Type = t, Attribute = attributes.First() as ReducerAttribute };
+              return typesWithMyAttribute.ToList();
+          }
+          public static List<ReducerTypes> GetReducedClass<TState, TAction>()
+          where TState : new()
+          where TAction : IAction
+          {
+              return GetReducedClass<TState, TAction>(AppDomain.CurrentDomain.GetAssemblies());
+          }*/
 
         internal static string GetName<TAction>(this TAction action)
             where TAction : IAction
@@ -123,10 +122,10 @@ namespace WeRedux
                     {
                         histo.Add(copy[i].Mutation);
                     }
-                   /* store.History.ForEach(h =>
-                    {
-                        histo.Add(h.Mutation);
-                    });*/
+                    /* store.History.ForEach(h =>
+                     {
+                         histo.Add(h.Mutation);
+                     });*/
                     var options = new JsonSerializerOptions();
                     options.Converters.Add(new JsonNonStringKeyDictionaryConverterFactory());
                     return JsonSerializer.Serialize(histo, typeof(HistoryContent));
@@ -156,7 +155,7 @@ namespace WeRedux
             foreach (var info in properties)
             {
                 var value = info.GetValue(action, indexer);
-                dict.Add(info.Name, value.ToString());
+                dict.Add(info.Name, value?.ToString() ?? string.Empty);
             }
             return dict;
         }
@@ -193,7 +192,7 @@ namespace WeRedux
         public static string GetMutation<TAction>(this TAction action)
             where TAction : IAction
         {
-            if(action is IStaticMutation)
+            if (action is IStaticMutation)
             {
                 return ((IStaticMutation)action).Mutation;
             }
@@ -217,7 +216,7 @@ namespace WeRedux
                 onCompleted*/);
         }
 
-        
+
         public static bool TryCast<T>(this object obj, out T result)
         {
             result = default(T);

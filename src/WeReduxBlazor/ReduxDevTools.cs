@@ -2,16 +2,14 @@
 using Microsoft.JSInterop;
 using System;
 #if DEBUG
-using System.Diagnostics;
 #endif
 using System.Reactive.Linq;
-using System.Reactive.Subjects;
 using System.Text.Json;
 using System.Threading.Tasks;
 using WeRedux;
 namespace WeReduxBlazor
 {
-    public partial class ReduxDevTools<TState, TAction>: IJsReduxInvokable,IDisposable
+    public partial class ReduxDevTools<TState, TAction> : IJsReduxInvokable, IDisposable
         where TState : new()
         where TAction : IAction
     {
@@ -28,33 +26,42 @@ namespace WeReduxBlazor
         public IRedux<TState, TAction> Redux { get; set; }
 
         public IStore<TState, TAction> Store => Redux?.Store;
+        [Parameter]
+        public bool UseLocalStorage
+        {
+            get => Redux.UseLocalStorage;
+            set
+            {
+                Redux.UseLocalStorage = value;
+            }
+        }
 
         IDisposable foo;
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (firstRender)
             {
-                
 
-            /*    foo=Store.OnTravelTo.Subscribe((timeLaps) =>
-                {
-                        this.StateHasChanged();
-                });
-                */
 
-                await JSRuntime.InvokeVoidAsync("window.addStore", DotNetObjectReference.Create(this), Redux.Name, this.ToString());
+                /*    foo=Store.OnTravelTo.Subscribe((timeLaps) =>
+                    {
+                            this.StateHasChanged();
+                    });
+                    */
+
+                await JSRuntime.InvokeVoidAsync("weredux.addStore", DotNetObjectReference.Create(this), Redux.Name, this.ToString());
 
                 Store.OnChanged.Subscribe(async (o) =>
                 {
 
-                    await JSRuntime.InvokeVoidAsync($"window.weredux.{Redux.Name.ToLowerInvariant()}.onChanged", o.Mutation, JsonSerializer.Serialize(o.State));
+                    await JSRuntime.InvokeVoidAsync($"weredux.stores.{Redux.Name.ToLowerInvariant()}.onChanged", o.Mutation, JsonSerializer.Serialize(o.State));
                     await Redux.SaveTolocalstorageAsync();
                 });
 
                 Store.OnInitialStateChanged.Subscribe(async (State) =>
                 {
                     await Redux.ClearLocalStorageAsync();
-                    await JSRuntime.InvokeVoidAsync($"window.weredux.{Redux.Name.ToLowerInvariant()}.init", JsonSerializer.Serialize(State));
+                    await JSRuntime.InvokeVoidAsync($"weredux.stores.{Redux.Name.ToLowerInvariant()}.init", JsonSerializer.Serialize(State));
 
                 });
 

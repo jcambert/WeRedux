@@ -1,76 +1,33 @@
 ﻿
-(function () {
+/*(function () {*/
 
-    var extension = window.__REDUX_DEVTOOLS_EXTENSION__;
+    let extension = window.__REDUX_DEVTOOLS_EXTENSION__;
     if (!extension) {
         console.log('Redux DevTools not installed.');
-        return;
+        
     } else {
         console.log('You can play with Redux DevTools Extensions');
     }
 
 
 
-    var constructor = function (dotnetref, name) {
+if (!extension) {
 
-        var weredux = {
-            connect: function () {
-                if (!this.dotnetref) return;
+} else {
 
-                this.devTools = extension.connect({ name: name + ' State' });
-                if (this.devTools) {
-                    console.log('Your are connected to Redux DevTools');
-                    subscribe(this);
-                    console.log('You are listenning DevTools Events');
-                } else {
-                    console.log('Unable to connect to Redux DevTools.');
-                    return;
-                }
-
-
-            },
-            devToolsReady: function (message) {
-                if (!this.dotnetref) return;
-               // this.dotnetref.invokeMethodAsync('DevToolsReady', 'Connected');
-            },
-            init: function (state) {
-                console.log('Init Devtools:', state);
-                this.devTools.init(state);
-            },
-            dispatch: function (action) {
-                if (!this.dotnetref) return;
-                if (action === "@@INIT") {
-                    this.dotnetref.invokeMethodAsync('Reset');
-                }
-
-                else
-                    this.dotnetref.invokeMethodAsync('Dispatch', action);
-            },
-            travelTo: function (index) {
-                console.log('Travel to:',index);
-                this.dotnetref.invokeMethodAsync('TravelTo', index);
-            },
-
-            onMutation: function (mutation) {
-                this.mutation = mutation;
-                console.log(mutation);
-            },
-            onChanged: function (mutation,state) {
-                console.log('State changed to:',mutation,' State', state);
-                this.devTools.send(mutation, state);
-                
-            }
-        }
-
-        weredux.name = name;
-        weredux.dotnetref = dotnetref;
-
-        return weredux;
-    }
+}
 
 
 
-    var subscribe = function (weredux) {
+    
+    
+    //window.devTools = {};
+
+
+
+    
+var weredux = {
+    subscribe : function (weredux) {
         weredux.devTools.subscribe((message) => {
             console.log(message);
             if (message.type === 'START') {
@@ -94,20 +51,73 @@
             }
 
         });
-    }
-    window.weredux = {};
-    //window.devTools = {};
+    },
+    init: function (dotnetref, name) {
+
+        let _weredux = {
+            connect: function () {
+                if (!this.dotnetref) return;
+
+                this.devTools = extension.connect({ name: name + ' State' });
+                if (this.devTools) {
+                    console.log('Your are connected to Redux DevTools');
+                    weredux.subscribe(this);
+                    console.log('You are listenning DevTools Events');
+                } else {
+                    console.log('Unable to connect to Redux DevTools.');
+                    return;
+                }
 
 
+            },
+            devToolsReady: function (message) {
+                if (!this.dotnetref) return;
+                // this.dotnetref.invokeMethodAsync('DevToolsReady', 'Connected');
+            },
+            init: function (state) {
+               // console.log('Init Devtools:', state);
+                this.devTools.init(state);
+            },
+            dispatch: function (action) {
+                if (!this.dotnetref) return;
+                if (action === "@@INIT") {
+                    this.dotnetref.invokeMethodAsync('Reset');
+                }
 
-    window.addStore = function (dotnetref, name, initialState) {
+                else
+                    this.dotnetref.invokeMethodAsync('Dispatch', action);
+            },
+            travelTo: function (index) {
+                //console.log('Travel to:', index);
+                this.dotnetref.invokeMethodAsync('TravelTo', index);
+            },
+
+            onMutation: function (mutation) {
+                this.mutation = mutation;
+                //console.log(mutation);
+            },
+            onChanged: function (mutation, state) {
+                //console.log('State changed to:', mutation, ' State', state);
+                this.devTools.send(mutation, state);
+
+            }
+        }
+
+        _weredux.name = name;
+        _weredux.dotnetref = dotnetref;
+
+        return _weredux;
+    },
+    addStore : function (dotnetref, name, initialState) {
         _name = name.toLowerCase();
-        window.weredux[_name] = constructor(dotnetref, name);
-        window.weredux[_name].connect();
-        window.weredux[_name].init(initialState);
-        console.log("The Store with name:" + name + " was successfully created");
-    }
+        this.stores[_name] = this.init(dotnetref, name);
+        this.stores[_name].connect();
+        this.stores[_name].init(initialState);
+        //console.log("The Store with name:" + name + " was successfully created");
+    },
+    stores: {}
+};
 
 
-}());
+/*}());*/
 

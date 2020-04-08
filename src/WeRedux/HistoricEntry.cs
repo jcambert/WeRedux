@@ -1,5 +1,4 @@
-﻿using Microsoft.AspNetCore.WebUtilities;
-using System;
+﻿using System;
 
 namespace WeRedux
 {
@@ -8,17 +7,17 @@ namespace WeRedux
         where TAction : IAction
     {
         public HistoricEntry(IActionState<TState, TAction> actionState)
-         {
-             ActionState = actionState;
-         }
+        {
+            ActionState = actionState;
+        }
 
-         public IActionState<TState, TAction> ActionState { get; }
-         public DateTime Time { get; } = DateTime.UtcNow;
+        public IActionState<TState, TAction> ActionState { get; }
+        public DateTime Time { get; } = DateTime.UtcNow;
 
-         public string Mutation => ActionState.Action.GetMutation();
-         public override string ToString()
-         {
-             return $"Historic entry with Action {Mutation}";
-         }
+        public string Mutation => ActionState.Action.GetMutation();
+        public override string ToString()
+        {
+            return $"Historic entry with Action {Mutation}";
+        }
     }
 }

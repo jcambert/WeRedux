@@ -1,16 +1,12 @@
 ﻿using AutoMapper;
-using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Reactive.Subjects;
-using System.Reflection;
-using System.Reactive.Linq;
-using System.Text.Json;
 using Microsoft.AspNetCore.WebUtilities;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reactive.Linq;
+using System.Reactive.Subjects;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging;
 #if DEBUG
-using System.Diagnostics;
 #endif
 
 namespace WeRedux
@@ -24,18 +20,10 @@ namespace WeRedux
         private TState _state;
         private readonly object _syncRoot = new object();
         private readonly Subject<TState> _onInitialStateChanged = new Subject<TState>();
-        //private readonly Subject<TState> _onReduced = new Subject<TState>();
         private readonly Subject<int> _onTravelTo = new Subject<int>();
-        //private readonly Subject<TState> _onTravel = new Subject<TState>();
         private readonly Subject<IMutationstate<TState>> _onChanged = new Subject<IMutationstate<TState>>();
-        //private readonly Subject<IActionState<TState, TAction>> _onAdd = new Subject<IActionState<TState, TAction>>();
-        //private readonly Subject<string> _onMutation = new Subject<string>();
-        //private readonly Subject<IActionState<TState, TAction>> _onMutated = new Subject<IActionState<TState, TAction>>();
         private readonly IMapper _mapper;
-      //  private readonly List<IReducer<TState, TAction>> reducers = new List<IReducer<TState, TAction>>();
         private readonly List<HistoricEntry<TState, TAction>> _history = new List<HistoricEntry<TState, TAction>>();
-
-
         private Subject<TAction> Dispatcher = new Subject<TAction>();
         #endregion
 
@@ -135,7 +123,7 @@ namespace WeRedux
         #region Events
         public IObservable<TState> OnInitialStateChanged => _onInitialStateChanged.AsObservable();
         public IObservable<IMutationstate<TState>> OnChanged => _onChanged.AsObservable();
-       // public IObservable<IActionState<TState, TAction>> OnAdd => _onAdd.AsObservable();
+        // public IObservable<IActionState<TState, TAction>> OnAdd => _onAdd.AsObservable();
         //public IObservable<TState> OnReduced => _onReduced.AsObservable();
         public IObservable<int> OnTravelTo => _onTravelTo.AsObservable();
         //public IObservable<TState> OnTravel => _onTravel.AsObservable();
@@ -168,15 +156,43 @@ namespace WeRedux
 
         public void StateChanged<T>(T action) where T : TAction
         {
-            _onChanged.OnNext(new MutationState<TState>() { Mutation = action.GetMutation(), State = State });
+            if(!_onChanged.IsDisposed)
+            _onChanged.OnNext(new MutationState<TState>() { Mutation = action.GetMutation(), State = State,Action=action.GetType() });
         }
+        private void InternalDispatch<T>(T action) where T : TAction
+        {
+            var mutationQuery = action is IStaticMutation ? ((IStaticMutation)action).Mutation : QueryHelpers.AddQueryString(action.GetType().Name.ToUpperInvariant(), action.ToDictionary());
 
+            if (action is InitialAction)
+            {
+                History.Add(new HistoricEntry<TState, TAction>(new ActionState<TState, TAction>() { State = State, Action = action }));
+                Dispatcher.OnNext(action);
+            }
+            else
+            {
+                TState newState = new TState();
+                Mapper.Map<TState, TState>(LastState, newState);
+                State = newState;
+                History.Add(new HistoricEntry<TState, TAction>(new ActionState<TState, TAction>() { State = newState, Action = action }));
+                Dispatcher.OnNext(action);
+            }
+        }
+        public Task DispatchAsync<T>(Action<T> action ) where T : TAction,new()
+        {
+            return Task.Factory.StartNew(() =>
+            {
+                T t = new T();
+                action?.Invoke(t);
+                //this.Dispatch(t);
+                InternalDispatch<T>(t);
+            });
+        }
         public void Dispatch<T>(T action) where T : TAction
         {
             lock (_syncRoot)
             {
                 var mutationQuery = action is IStaticMutation ? ((IStaticMutation)action).Mutation : QueryHelpers.AddQueryString(action.GetType().Name.ToUpperInvariant(), action.ToDictionary());
-                //_onMutation.OnNext(mutationQuery);
+              
                 if (action is InitialAction)
                 {
                     History.Add(new HistoricEntry<TState, TAction>(new ActionState<TState, TAction>() { State = State, Action = action }));
@@ -185,7 +201,7 @@ namespace WeRedux
                 else
                 {
                     TState newState = new TState();
-                    Mapper.Map<TState, TState>(LastState, newState);// ,o => { o.CreateInstance<TState>(); });
+                    Mapper.Map<TState, TState>(LastState, newState);
                     State = newState;
                     History.Add(new HistoricEntry<TState, TAction>(new ActionState<TState, TAction>() { State = newState, Action = action }));
                     Dispatcher.OnNext(action);
@@ -244,7 +260,7 @@ namespace WeRedux
             catch (Exception ex)
             {
 #if DEBUG
-                Debugger.Break();
+                //  Debugger.Break();
 #endif
             }
             finally
@@ -252,7 +268,7 @@ namespace WeRedux
                 Travelling = false;
             }
 
-           
+
 
         }
 
@@ -284,15 +300,9 @@ namespace WeRedux
                 {
                     // TODO: supprimer l'état managé (objets managés).
 
-                  /*  foreach (var reducer in reducers)
-                    {
-                        reducer.Dispose();
-                    }
-                    _onReduced.Dispose();*/
                     _onChanged.Dispose();
-                    //_onAdd.Dispose();
-                    //_onTravelTo.Dispose();
-                    //_onMutation.Dispose();
+                    _onTravelTo.Dispose();
+                    _onInitialStateChanged.Dispose();
                 }
 
                 // TODO: libérer les ressources non managées (objets non managés) et remplacer un finaliseur ci-dessous.
@@ -317,6 +327,8 @@ namespace WeRedux
             // TODO: supprimer les marques de commentaire pour la ligne suivante si le finaliseur est remplacé ci-dessus.
             // GC.SuppressFinalize(this);
         }
+
+        
 
 
 

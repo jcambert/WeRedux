@@ -1,10 +1,10 @@
 ﻿using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
+using Microsoft.VisualBasic;
 using System;
 using System.Collections.Generic;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Text;
 using System.Text.Json;
 using System.Threading.Tasks;
 using WeRedux;
@@ -30,6 +30,7 @@ namespace WeReduxBlazor
 
         Task ClearAllLocalStorageAsync();
 
+        bool UseLocalStorage { get; set; } 
     }
     public class Redux<TState, TAction> : IRedux<TState, TAction>
          where TState : new()
@@ -47,21 +48,32 @@ namespace WeReduxBlazor
             {
                 travelFromLocalStorage = b;
             });
-            /* new Action(async () =>
-             {
 
-             })();*/
         }
         private readonly Subject<bool> _onLoadFromLocalStorage = new Subject<bool>();
 
         private bool travelFromLocalStorage = false;
 
-
-
+        private bool _clear = false;
+        public void Clear()
+        {
+            _clear = true;
+        }
+        public bool UseLocalStorage { get; set; } = true;
+        private async Task InternalClear()
+        {
+            if (_clear)
+            {
+                await ClearAllLocalStorageAsync();
+                Reset();
+            }
+            _clear = false;
+        }
 
         public async Task LoadStoreAsync()
         {
 
+            await InternalClear();
             if (Store.IsEmpty)
                 await LoadFromLocalStorageAsync();
             else
@@ -78,30 +90,22 @@ namespace WeReduxBlazor
 
         public IObservable<IMutationstate<TState>> OnChanged => Store.OnChanged;
 
-        //public IObservable<TState> OnReduced => Store.OnReduced;
-
         public IObservable<int> OnTravelTo => Store.OnTravelTo;
-
-        //public IObservable<TState> OnTravel => Store.OnTravel;
 
         public IObservable<TState> OnInitialStateChanged => Store.OnInitialStateChanged;
 
-        //public IObservable<string> OnMutation => Store.OnMutation;
-
-        //public IObservable<IActionState<TState, TAction>> OnAdd => Store.OnAdd;
-
         public IObservable<bool> OnLoadFromLocalStorage => _onLoadFromLocalStorage.AsObservable();
 
-//        public IObservable<IActionState<TState, TAction>> OnMutated => Store.OnMutated;
 
         public bool TravelFromStorage => travelFromLocalStorage;
 
         public async Task SaveTolocalstorageAsync()
         {
             if (travelFromLocalStorage) return;
-
+            await InternalClear();
             try
             {
+                if(UseLocalStorage)
                 await Storage.SetItemAsync(Name, Store.ToJson());
             }
             catch (Exception ex)
@@ -113,13 +117,12 @@ namespace WeReduxBlazor
         }
         public async Task LoadFromLocalStorageAsync()
         {
-            if (Storage == null || travelFromLocalStorage) return;
-            //_onLoadFromLocalStorage.OnNext(true);
+            if (Storage == null || travelFromLocalStorage ||!UseLocalStorage) return;
+            await InternalClear();
             travelFromLocalStorage = true;
             var content = await Storage.GetItemAsync(Name);
             if (string.IsNullOrEmpty(content))
             {
-                //_onLoadFromLocalStorage.OnNext(false);
                 travelFromLocalStorage = false;
                 return;
             }
@@ -129,14 +132,10 @@ namespace WeReduxBlazor
             {
                 Console.WriteLine($"Load From LocalStorage:{action}");
                 Logger.LogTrace($"Load From LocalStorage:{action}");
-                //tasks.Add(DispatchAsync(action));
                 Dispatch(action);
 
 
             }
-            //    TravelTo(history.Actions.Count - 1);
-            //_onLoadFromLocalStorage.OnNext(false);
-            //Task.WaitAll(tasks.ToArray());
             TravelTo(history.Actions.Count - 1);
             travelFromLocalStorage = false;
         }
@@ -144,14 +143,14 @@ namespace WeReduxBlazor
         public async Task ClearAllLocalStorageAsync()
         {
 
-            if (Storage == null || travelFromLocalStorage) return;
+            if (Storage == null || travelFromLocalStorage || !UseLocalStorage) return;
             await Storage.ClearAsync();
         }
 
 
         public async Task ClearLocalStorageAsync()
         {
-            if (Storage == null || travelFromLocalStorage) return;
+            if (Storage == null || travelFromLocalStorage || !UseLocalStorage) return;
             await Storage.RemoveItemAsync(Name);
         }
 
@@ -172,7 +171,8 @@ namespace WeReduxBlazor
         {
             Store.Dispatch<T>(action);
         }
-
+        public Task DispatchAsync<T>(Action<T> action = null) where T : TAction, new() =>
+            Store.DispatchAsync<T>(action);
         public void Dispatch<T>(Action<T> action = null) where T : TAction, new()
         {
             Store.Dispatch<T>(action);
@@ -190,6 +190,7 @@ namespace WeReduxBlazor
             return JsonSerializer.Serialize(State);
         }
 
-       
+        
+
     }
 }

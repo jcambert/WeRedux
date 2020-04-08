@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Threading.Tasks;
 
 namespace WeRedux
 {
@@ -10,16 +9,16 @@ namespace WeRedux
     {
         TState InitialState { get; }
         TState State { get; }
-        
-        
-        IObservable< TAction> On<T>() where T : TAction;
+
+
+        IObservable<TAction> On<T>() where T : TAction;
         void TravelTo(int index);
         List<HistoricEntry<TState, TAction>> History { get; }
         string Name { get; }
         bool IsEmpty { get; }
         void Reset();
-        
-        
+
+
         bool Travelling { get; }
 
         void StateChanged<T>(T action) where T : TAction;

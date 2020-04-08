@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace WeReduxBlazor
+﻿namespace WeReduxBlazor
 {
     public class StateBase
     {

@@ -1,16 +1,14 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Microsoft.JSInterop;
+using System;
 using System.Linq;
+using System.Reactive.Linq;
 using System.Reactive.Subjects;
-using System.Text;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.JSInterop;
-using System.Reactive.Linq;
 namespace WeReduxBlazor
 {
-    public abstract class StorageBase:IDisposable
+    public abstract class StorageBase : IDisposable
     {
         private readonly IJsRuntimeAccess _jsRuntime;
         private readonly string _fullTypeName;
@@ -125,7 +123,7 @@ namespace WeReduxBlazor
         [JSInvokable("StorageChangedTo")]
         public virtual void StorageChangedTo(string key, object oldValue, object newValue)
         {
-            
+
             _storageChanged.OnNext(new StorageEventArgs()
             {
                 Key = key,

@@ -1,6 +1,5 @@
 ﻿using AutoMapper;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 using Microsoft.JSInterop;
 using System;
@@ -15,12 +14,12 @@ namespace WeReduxBlazor
 
     public static class Extensions
     {
-        public static IServiceCollection AddRedux<TState, TAction>(this IServiceCollection services, string name, Action<IStore<TState, TAction>> storeOpt = null, Action<IMapperConfigurationExpression> mapper = null)
+        public static IServiceCollection AddRedux<TState, TAction>(this IServiceCollection services, string name, Action<IStore<TState, TAction>> storeOpt = null, Action<IMapperConfigurationExpression> mapper = null,Action <Redux<TState,TAction>> reduxOpt=null)
              where TState : new()
             where TAction : IAction
         {
             services
-            .AddStore<TState,TAction>(name,storeOpt,mapper)
+            .AddStore<TState, TAction>(name, storeOpt, mapper)
             .AddStorage()
             .AddScoped<IRedux<TState, TAction>, Redux<TState, TAction>>(services =>
             {
@@ -29,19 +28,19 @@ namespace WeReduxBlazor
                 //var js = services.GetRequiredService<IJSRuntime>();
                 var logger = services.GetRequiredService<ILogger<Redux<TState, TAction>>>();
                 var redux = new Redux<TState, TAction>(store, storage, logger, name);
-
+                reduxOpt?.Invoke(redux);
                 return redux;
             });
             return services;
         }
-        public static IServiceCollection AddStore<TState, TAction>(this IServiceCollection services,string name, Action<IStore<TState, TAction>> opt = null, Action<IMapperConfigurationExpression> mapper = null)
+        public static IServiceCollection AddStore<TState, TAction>(this IServiceCollection services, string name, Action<IStore<TState, TAction>> opt = null, Action<IMapperConfigurationExpression> mapper = null)
             where TState : new()
             where TAction : IAction
         {
 
             services.AddScoped<IStore<TState, TAction>, Store<TState, TAction>>(services =>
             {
-               // var logger = services.GetRequiredService<ILogger<Store<TState, TAction>>>();
+                // var logger = services.GetRequiredService<ILogger<Store<TState, TAction>>>();
                 var store = new Store<TState, TAction>(name,
                     cfg =>
                     {
