@@ -211,10 +211,11 @@ namespace WeRedux
         {
             return source.Select(e => Observable.Defer(() => onNext(e).ToObservable())).Concat()
                 .Subscribe(
-                e => { }/*, 
+                e => { }, 
                 onError,
-                onCompleted*/);
+                onCompleted);
         }
+
 
 
         public static bool TryCast<T>(this object obj, out T result)
