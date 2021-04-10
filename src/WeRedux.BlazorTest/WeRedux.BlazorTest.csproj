@@ -1,12 +1,13 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
   <ProjectExtensions><VisualStudio><UserProperties properties_4launchsettings_1json__JsonSchema="" /></VisualStudio></ProjectExtensions>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\..\MicroS-Common\src\MicroS-Common\MicroS-Common.csproj" />
     <ProjectReference Include="..\WeReduxBlazor\WeReduxBlazor.csproj" />
     <ProjectReference Include="..\WeRedux\WeRedux.csproj" />
   </ItemGroup>

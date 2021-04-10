@@ -1,5 +1,6 @@
 ﻿@page "/"
 @inject LocalStorage storage
+@using MicroS_Common.Actions;
 <h1>Hello, world!</h1>
 
 Welcome to your new app.
@@ -11,11 +12,11 @@ Welcome to your new app.
         <SwitchButton LabelOn="OUI" LabelOff="NON" OnClick="@(async(value)=>IsDebugging=value)" ColorOn="primary" ColorOff="custom-color"></SwitchButton>
 
     </ChildContent>
-    
-    <Debug Context="entry" >
+
+    <Debug Context="entry">
         @entry.Mutation
     </Debug>
-    
+
 </ReduxDevTools>
 
 <ReduxDevTools TState="CounterState2" TAction="IAction" @ref="reduxCounterState2">

@@ -4,7 +4,7 @@
     {
         string Mutation { get; }
     }
-    public interface IAction
+   /* public interface IAction
     {
-    }
+    }*/
 }

@@ -1,4 +1,6 @@
-﻿namespace WeRedux.Samples
+﻿using MicroS_Common.Actions;
+
+namespace WeRedux.Samples
 {
     public class IncrementCounter : IAction
     {

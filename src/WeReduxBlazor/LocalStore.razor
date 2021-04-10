@@ -1,0 +1,10 @@
+﻿<CascadingValue Value="Store">
+    @ChildContent
+</CascadingValue>
+@code {
+    [Inject]
+    public LocalStorage Store { get; set; }
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+}

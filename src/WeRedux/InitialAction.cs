@@ -1,4 +1,5 @@
-﻿namespace WeRedux
+﻿using MicroS_Common.Actions;
+namespace WeRedux
 {
 
     public class InitialAction : IAction, IStaticMutation

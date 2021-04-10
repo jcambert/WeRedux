@@ -1,12 +1,11 @@
 ﻿using Microsoft.AspNetCore.Components;
 using Microsoft.JSInterop;
 using System;
-#if DEBUG
-#endif
 using System.Reactive.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
 using WeRedux;
+using MicroS_Common.Actions;
 namespace WeReduxBlazor
 {
     public partial class ReduxDevTools<TState, TAction> : IJsReduxInvokable, IDisposable
@@ -36,26 +35,27 @@ namespace WeReduxBlazor
             }
         }
 
-        IDisposable foo;
         protected override async Task OnAfterRenderAsync(bool firstRender)
         {
             if (firstRender)
             {
-
-
-                /*    foo=Store.OnTravelTo.Subscribe((timeLaps) =>
-                    {
-                            this.StateHasChanged();
-                    });
-                    */
-
+                Console.WriteLine("Rendering 1st ReduxDevTools");
                 await JSRuntime.InvokeVoidAsync("weredux.addStore", DotNetObjectReference.Create(this), Redux.Name, this.ToString());
 
                 Store.OnChanged.Subscribe(async (o) =>
                 {
+                    try
+                    {
+                        await JSRuntime.InvokeVoidAsync($"weredux.stores.{Redux.Name.ToLowerInvariant()}.onChanged", o.Mutation, JsonSerializer.Serialize(o.State));
 
-                    await JSRuntime.InvokeVoidAsync($"weredux.stores.{Redux.Name.ToLowerInvariant()}.onChanged", o.Mutation, JsonSerializer.Serialize(o.State));
-                    await Redux.SaveTolocalstorageAsync();
+                    }
+                    catch  { }
+                    try
+                    {
+
+                        await Redux.SaveTolocalstorageAsync();
+                    }
+                    catch{ } 
                 });
 
                 Store.OnInitialStateChanged.Subscribe(async (State) =>
@@ -65,7 +65,8 @@ namespace WeReduxBlazor
 
                 });
 
-                await Redux.LoadStoreAsync();
+                //await Redux.LoadStoreAsync();
+                Console.WriteLine("Rendered 1st ReduxDevTools");
             }
 
 
@@ -102,8 +103,7 @@ namespace WeReduxBlazor
                 if (disposing)
                 {
                     // TODO: supprimer l'état managé (objets managés).
-                    Console.WriteLine("ReduxDevTools Dispose Foo");
-                    foo?.Dispose();
+                    Console.WriteLine("ReduxDevTools Disposing");
                 }
 
                 // TODO: libérer les ressources non managées (objets non managés) et remplacer un finaliseur ci-dessous.

@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MicroS_Common.Actions;
+using System;
 
 namespace WeRedux.Samples
 {
@@ -12,10 +13,10 @@ namespace WeRedux.Samples
                 cfg.CreateMap<CounterState, CounterState>();
                
             });
-            store.OnReduced.Subscribe(state =>
+            /*store.OnReduced.Subscribe(state =>
             {
                 Console.WriteLine($"State Count has Changed :{state}");
-            });
+            });*/
             //store.AddReducer<CounterReducer>();
            //store.AddReducer<TemplateReducer>();
             IAction[] actions = new IAction[] { new TemplateAction(), new IncrementCounter(new Random().Next(50,100)),new DecrementCounter(new Random().Next(1,49)) };

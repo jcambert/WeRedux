@@ -1,4 +1,6 @@
-﻿namespace WeRedux.BlazorTest
+﻿using MicroS_Common.Actions;
+
+namespace WeRedux.BlazorTest
 {
     public class IncrementCounter : IAction
     {

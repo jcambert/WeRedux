@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-
+using MicroS_Common.Actions;
 namespace WeRedux
 {
     public interface IStore<TState, TAction> : IStoreEvents<TState, TAction>, IDisposable

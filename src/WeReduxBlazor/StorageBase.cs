@@ -59,6 +59,8 @@ namespace WeReduxBlazor
         public async Task<T> GetItemAsync<T>(string key, CancellationToken cancellationToken = default)
         {
             var json = await GetItemAsync(key, cancellationToken);
+            if (typeof(T) == typeof( string))
+                return (T)Convert.ChangeType(json,typeof(T));
             return string.IsNullOrEmpty(json) ? default : JsonSerializer.Deserialize<T>(json);
         }
 

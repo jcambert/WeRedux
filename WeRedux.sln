@@ -11,6 +11,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WeRedux.BlazorTest", "src\W
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WeReduxBlazor", "src\WeReduxBlazor\WeReduxBlazor.csproj", "{D1E3B80E-3ABB-4B65-95CD-A63A557DB1C8}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MicroS-Common", "..\MicroS-Common\src\MicroS-Common\MicroS-Common.csproj", "{9598ABCC-84F8-4021-BB1D-BF780B43CCAC}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -33,6 +35,10 @@ Global
 		{D1E3B80E-3ABB-4B65-95CD-A63A557DB1C8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{D1E3B80E-3ABB-4B65-95CD-A63A557DB1C8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{D1E3B80E-3ABB-4B65-95CD-A63A557DB1C8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9598ABCC-84F8-4021-BB1D-BF780B43CCAC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9598ABCC-84F8-4021-BB1D-BF780B43CCAC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9598ABCC-84F8-4021-BB1D-BF780B43CCAC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9598ABCC-84F8-4021-BB1D-BF780B43CCAC}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

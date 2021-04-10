@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using MicroS_Common.Actions;
 using Microsoft.AspNetCore.WebUtilities;
 using System;
 using System.Collections.Generic;
@@ -6,8 +7,7 @@ using System.Linq;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Threading.Tasks;
-#if DEBUG
-#endif
+
 
 namespace WeRedux
 {
@@ -49,28 +49,13 @@ namespace WeRedux
                 History.Clear();
 
                 Dispatch((TAction)(object)new InitialAction());
-                // _onMutated.OnNext(new ActionState<TState, TAction> {/* NewState = state,*/ State = state });
 
             });
             Dispatcher.AsObservable().Where(t => t.GetType() == typeof(InitialAction)).Subscribe(action =>
             {
                 StateChanged(action);
             });
-            /* OnMutation.Subscribe(o =>
-             {
-                 CurrentMutation = o;
-             });
-             OnMutated.Subscribe(o =>
-             {
-                 //allow initial state and discard duplicate identical last mutation
-                 //if(History.Count==0 || History.Last().Mutation!=o.Action.GetMutation())
-                 State = o.State;
-                 History.Add(new HistoricEntry<TState, TAction>(o));
-             });
-             OnTimeTravel.Subscribe(travel => Travelling = travel);
-
-
-          */
+           
             this.InitialState = this._state = new TState();
         }
         #endregion
@@ -87,10 +72,6 @@ namespace WeRedux
                 if (value == null)
                     throw new ArgumentNullException("State cannot be null");
                 _state = value;
-                //if (Travelling)
-                //    _onTravel.OnNext(_state);
-                //else
-                //    _onChanged.OnNext(new MutationState<TState>() { Mutation = CurrentMutation, State = _state });
             }
         }
 
@@ -123,12 +104,7 @@ namespace WeRedux
         #region Events
         public IObservable<TState> OnInitialStateChanged => _onInitialStateChanged.AsObservable();
         public IObservable<IMutationstate<TState>> OnChanged => _onChanged.AsObservable();
-        // public IObservable<IActionState<TState, TAction>> OnAdd => _onAdd.AsObservable();
-        //public IObservable<TState> OnReduced => _onReduced.AsObservable();
         public IObservable<int> OnTravelTo => _onTravelTo.AsObservable();
-        //public IObservable<TState> OnTravel => _onTravel.AsObservable();
-        //public IObservable<string> OnMutation => _onMutation.AsObservable();
-        //public IObservable<IActionState<TState, TAction>> OnMutated => _onMutated.AsObservable();
         #endregion
 
         #region Reducer
@@ -156,8 +132,13 @@ namespace WeRedux
 
         public void StateChanged<T>(T action) where T : TAction
         {
-            if(!_onChanged.IsDisposed)
-            _onChanged.OnNext(new MutationState<TState>() { Mutation = action.GetMutation(), State = State,Action=action.GetType() });
+            if (!_onChanged.IsDisposed)
+            {
+               // if (typeof(T).Name == "IAction")
+                //    Debugger.Break();
+                //Console.WriteLine($"Store:StateChanged {typeof(T).Name}");
+                _onChanged.OnNext(new MutationState<TState>() { Mutation = action.GetMutation(), State = State, Action = action.GetType() });
+            }
         }
         private void InternalDispatch<T>(T action) where T : TAction
         {

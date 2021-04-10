@@ -1,5 +1,5 @@
 ﻿using System;
-
+using MicroS_Common.Actions;
 namespace WeRedux
 {
     public class HistoricEntry<TState, TAction>
